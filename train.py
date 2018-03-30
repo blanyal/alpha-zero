@@ -13,4 +13,14 @@ class Train:
                 self.play_game()
 
     def play_game(self):
-        pass
+        mcts = MonteCarloTreeSearch(self.net)
+
+        game_over = False
+        winner = 0
+
+        while not game_over:
+            move = mcts.search(self.game)
+            self.game.play_move(move)
+            game_over, winner = self.game.check_game_over()
+
+        print(winner)

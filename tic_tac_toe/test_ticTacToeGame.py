@@ -3,14 +3,6 @@ from tic_tac_toe.tic_tac_toe_game import TicTacToeGame
 
 
 class TestTicTacToeGame(TestCase):
-    def test_clone(self):
-        self.fail()
-
-    def test_play_move(self):
-        self.fail()
-
-    def test_get_valid_moves(self):
-        self.fail()
 
     def test_check_game_over_1(self):
         game = TicTacToeGame()

@@ -31,7 +31,6 @@ class TicTacToeGame(Game):
 
         for x in range(self.side):
             for y in range(self.side):
-
                 if self.state[x][y] == 0:
                     moves.append((x, y))
 

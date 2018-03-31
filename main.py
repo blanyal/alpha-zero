@@ -5,7 +5,7 @@ from train import Train
 
 if __name__ == '__main__':
     game = TicTacToeGame()
-    net = NeuralNetwork()
+    net = NeuralNetwork(game)
     train = Train(game, net)
 
     train.start()

@@ -7,8 +7,10 @@ import math
 class TreeNode:
 
     def __init__(self, game, parent=None, move=None):
-        self.n = 0
-        self.q = 0
+        self.Nsa = 0
+        self.Wsa = 0
+        self.Psa = 0
+        self.Qsa = 0
         self.move = move
         self.children = []
         self.parent = parent
@@ -32,7 +34,7 @@ class TreeNode:
         highest_index = 0
 
         for idx, child in enumerate(self.children):
-            uct = child.q / child.n + c_puct * math.sqrt(2 * math.log(self.n) / child.n)
+            uct = (child.Wsa / child.Nsa) + child.Psa * c_puct * (math.sqrt(self.Nsa) / 1 + child.Nsa)
             if uct > highest_uct:
                 highest_uct = uct
                 highest_index = idx
@@ -45,15 +47,15 @@ class TreeNode:
         return child_node
 
     def back_prop(self, last_player, winner):
-        self.n += 1
+        self.Nsa += 1
 
         if winner == 0:
-            self.q += 0.5
+            self.Wsa += 0.5
 
         if last_player == winner:
-            self.q += 1
+            self.Wsa += 1
         else:
-            self.q += 0
+            self.Wsa += 0
 
 
 class MonteCarloTreeSearch:
@@ -89,13 +91,12 @@ class MonteCarloTreeSearch:
                 node.back_prop(node.last_player, winner)
                 node = node.parent
 
-        highest_n = 0
+        highest_nsa = 0
         highest_index = 0
 
         for idx, child in enumerate(self.root.children):
-            n = child.n
-            if n > highest_n:
-                highest_n = n
+            if child.Nsa > highest_nsa:
+                highest_nsa = child.Nsa
                 highest_index = idx
 
         return self.root.children[highest_index].move

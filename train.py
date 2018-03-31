@@ -21,6 +21,7 @@ class Train:
         while not game_over:
             move = mcts.search(self.game)
             self.game.play_move(move)
+            self.game.print_board()
             game_over, winner = self.game.check_game_over()
 
         print(winner)

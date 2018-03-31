@@ -1,6 +1,7 @@
 from config import CFG
 from random import choice
 import numpy as np
+import math
 
 
 class TreeNode:
@@ -8,11 +9,11 @@ class TreeNode:
     def __init__(self, game, parent=None, move=None):
         self.n = 0
         self.q = 0
-        self.game = game
         self.move = move
         self.children = []
         self.parent = parent
         self.untried_moves = game.get_valid_moves()
+        self.last_player = game.last_player
 
     def is_not_leaf(self):
         if len(self.children) > 0:
@@ -24,26 +25,38 @@ class TreeNode:
             return True
         return False
 
-    def select_child(self):
-        uct_list = [
-            (c.q / c.n) + CFG.c_puct * np.sqrt((2 * np.log(self.n) / c.n))
-            for c in self.children
-        ]
+    def select_child(self, c_puct_arg=None):
+        if c_puct_arg is None:
+            c_puct = CFG.c_puct
+        else:
+            c_puct = c_puct_arg
 
-        max_index = np.argmax(uct_list)
+        highest_uct = 0
+        highest_index = 0
 
-        return self.children[max_index]
+        for idx, child in enumerate(self.children):
+            uct = child.q / child.n + c_puct * math.sqrt(2 * math.log(self.n) / child.n)
+            if uct > highest_uct:
+                highest_uct = uct
+                highest_index = idx
+
+        return self.children[highest_index]
 
     def add_child_node(self, game, parent, move):
         child_node = TreeNode(game, parent, move)
         self.children.append(child_node)
         return child_node
 
-    def back_prop(self, game_over, winner):
+    def back_prop(self, last_player, winner):
         self.n += 1
 
-        if self.game.current_player == winner and game_over is True:
+        if winner == 0:
+            self.q += 0.5
+
+        if last_player == winner:
             self.q += 1
+        else:
+            self.q += 0
 
 
 class MonteCarloTreeSearch:
@@ -70,13 +83,14 @@ class MonteCarloTreeSearch:
                 game.play_move(move)
                 node = node.add_child_node(game, node, move)
 
-            while not game.check_game_over()[0]:
+            while len(game.get_valid_moves()) > 0:
                 moves = game.get_valid_moves()
                 game.play_move(choice(moves))
 
             while node is not None:
                 game_over, winner = game.check_game_over()
-                node.back_prop(game_over, winner)
+                node.back_prop(node.last_player, winner)
                 node = node.parent
 
-        return sorted(self.root.children, key=lambda c: c.q)[-1].move
+        best_child_node = self.root.select_child(0.0)
+        return best_child_node.move

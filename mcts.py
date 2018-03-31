@@ -25,11 +25,8 @@ class TreeNode:
             return True
         return False
 
-    def select_child(self, c_puct_arg=None):
-        if c_puct_arg is None:
-            c_puct = CFG.c_puct
-        else:
-            c_puct = c_puct_arg
+    def select_child(self):
+        c_puct = CFG.c_puct
 
         highest_uct = 0
         highest_index = 0
@@ -92,5 +89,13 @@ class MonteCarloTreeSearch:
                 node.back_prop(node.last_player, winner)
                 node = node.parent
 
-        best_child_node = self.root.select_child(0.0)
-        return best_child_node.move
+        highest_n = 0
+        highest_index = 0
+
+        for idx, child in enumerate(self.root.children):
+            n = child.n
+            if n > highest_n:
+                highest_n = n
+                highest_index = idx
+
+        return self.root.children[highest_index].move

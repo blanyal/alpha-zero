@@ -1,5 +1,7 @@
 # alpha-zero
+AlphaZero implementation based on ["Mastering the game of Go without human knowledge"](https://deepmind.com/documents/119/agz_unformatted_nature.pdf) and ["Mastering Chess and Shogi by Self-Play with a General Reinforcement Learning Algorithm"](https://arxiv.org/abs/1712.01815) by DeepMind.
 
+Work in progress.
 ## License
     MIT License
 

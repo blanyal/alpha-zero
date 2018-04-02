@@ -32,15 +32,21 @@ class CFG(object):
         num_mcts_sims: Number of MCTS simulations per game.
         c_puct: The level of exploration used in MCTS.
         l2_val: The level of L2 weight regularization used during training.
-        momentum_parameter: Momentum Parameter for the momentum optimizer.
+        momentum: Momentum Parameter for the momentum optimizer.
         learning_rate: Learning Rate for the momentum optimizer.
         t_policy_val: Value for policy prediction.
+        temperature_init: Initial Temperature parameter to control exploration.
+        temperature_final: Initial Temperature parameter to control exploration.
+        temperature_thresh: Threshold where temperature init changes to final
     """
-    num_iterations = 1
-    num_games = 1
-    num_mcts_sims = 10000
+    num_iterations = 2
+    num_games = 2
+    num_mcts_sims = 10
     c_puct = 1.0
     l2_val = 0.0001
-    momentum_parameter = 0.9
+    momentum = 0.9
     learning_rate = 0.01
     t_policy_val = 0.0001
+    temperature_init = 1
+    temperature_final = 0.01
+    temperature_thresh = 3

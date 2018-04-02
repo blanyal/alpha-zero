@@ -22,13 +22,13 @@
 # ==============================================================================
 """File which starts the program"""
 from tic_tac_toe.tic_tac_toe_game import TicTacToeGame
-from neural_net import NeuralNetwork
+from neural_net import NeuralNetworkWrapper
 from train import Train
 
 if __name__ == '__main__':
     """Initializes game state, neural network and the training loop"""
     game = TicTacToeGame()
-    net = NeuralNetwork(game)
+    net = NeuralNetworkWrapper(game)
     train = Train(game, net)
 
     train.start()

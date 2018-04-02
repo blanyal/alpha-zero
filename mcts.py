@@ -22,7 +22,6 @@
 # ==============================================================================
 """Classes for Monte Carlo Tree Search."""
 from config import CFG
-from random import choice
 import math
 
 
@@ -34,24 +33,20 @@ class TreeNode(object):
         Wsa: A float for the total action value.
         Qsa: A float for the mean action value.
         Psa: A float for the prior probability of reaching this node.
-        move: A tuple(row, column) of the prior move of reaching this node.
+        action: A tuple(row, column) of the prior move of reaching this node.
         children: A list which stores child nodes.
         parent: A TreeNode representing the parent node.
-        untried_moves: A list containing all valid untried moves.
-        last_player: An integer indicating the player who played the last move.
     """
 
-    def __init__(self, game, parent=None, move=None):
+    def __init__(self, parent=None, action=None, psa=0.0):
         """Initializes TreeNode with the initial statistics and data."""
         self.Nsa = 0
         self.Wsa = 0.0
         self.Qsa = 0.0
-        self.Psa = 0.0
-        self.move = move
+        self.Psa = psa
+        self.action = action
         self.children = []
         self.parent = parent
-        self.untried_moves = game.get_valid_moves()
-        self.last_player = game.last_player
 
     def is_not_leaf(self):
         """Checks if a TreeNode is a leaf.
@@ -60,16 +55,6 @@ class TreeNode(object):
             A boolean value indicating if a TreeNode is a leaf.
         """
         if len(self.children) > 0:
-            return True
-        return False
-
-    def is_expanded(self):
-        """Checks if a TreeNode is fully expanded.
-
-        Returns:
-            A boolean value indicating if a TreeNode is a fully expanded.
-        """
-        if len(self.untried_moves) == 0:
             return True
         return False
 
@@ -86,7 +71,7 @@ class TreeNode(object):
 
         # Select the child with the highest Q + U value
         for idx, child in enumerate(self.children):
-            uct = (child.Wsa / child.Nsa) + child.Psa * c_puct * (
+            uct = child.Qsa + child.Psa * c_puct * (
                     math.sqrt(self.Nsa) / 1 + child.Nsa)
             if uct > highest_uct:
                 highest_uct = uct
@@ -94,39 +79,47 @@ class TreeNode(object):
 
         return self.children[highest_index]
 
-    def add_child_node(self, game, parent, move):
-        """Creates and adds a child TreeNode to the current node.
+    def expand_node(self, game, psa_vector):
+        """Expands the current node by adding valid moves as children.
 
         Args:
             game: An object containing the game state.
-            parent: A TreeNode which is the parent of the current node.
-            move: A tuple(row, column) of the prior move of reaching this node.
+            psa_vector: A list containing move probabilities for each move.
+        """
+        valid_moves = game.get_valid_moves()
+        for idx, move in enumerate(valid_moves):
+            if move[0] is not 0:
+                action = (move[1], move[2])
+                self.add_child_node(parent=self, action=action,
+                                    psa=psa_vector[idx])
+
+    def add_child_node(self, parent, action, psa=0.0):
+        """Creates and adds a child TreeNode to the current node.
+
+        Args:
+            parent: A TreeNode which is the parent of this node.
+            action: A tuple(row, column) of the prior move to reach this node.
+            psa: A float representing the raw move probability for this node.
 
         Returns:
             The newly created child TreeNode.
         """
-        child_node = TreeNode(game, parent, move)
+
+        child_node = TreeNode(parent=parent, action=action,
+                              psa=psa)
         self.children.append(child_node)
         return child_node
 
-    def back_prop(self, last_player, winner):
-        """Update the current nodes statistics based on the game outcome.
+    def back_prop(self, wsa, v):
+        """Update the current node's statistics based on the game outcome.
 
         Args:
-            last_player: An integer for the player who played the last move.
-            winner: An integer indicating the player who won the game.
+            wsa: A float representing the action value for this state.
+            v: A float representing the network value of this state.
         """
         self.Nsa += 1
-
-        # For draws
-        if winner == 0:
-            self.Wsa += 0.5
-
-        # For wins or losses
-        if last_player == winner:
-            self.Wsa += 1
-        else:
-            self.Wsa += 0
+        self.Wsa = wsa + v
+        self.Qsa = self.Wsa / self.Nsa
 
 
 class MonteCarloTreeSearch(object):
@@ -144,51 +137,52 @@ class MonteCarloTreeSearch(object):
         self.game = None
         self.net = net
 
-    def search(self, game):
+    def search(self, game, node, temperature):
         """MCTS loop to get the best move which can be played at a given state.
 
         Args:
             game: An object containing the game state.
+            node: A TreeNode representing the board state and its statistics.
+            temperature: A float to control the level of exploration.
 
         Returns:
-            A tuple(row, column) of the best move to play at this state.
+            A child node representing the best move to play at this state.
         """
-        self.root = TreeNode(game)
+        self.root = node
         self.game = game
 
         for i in range(CFG.num_mcts_sims):
             node = self.root
             game = self.game.clone()  # Create a fresh clone for each loop.
 
-            # Loop when node has been fully expanded but is not a leaf.
-            while node.is_not_leaf() and node.is_expanded():
+            # Loop when node is not a leaf
+            while node.is_not_leaf():
                 node = node.select_child()
-                game.play_move(node.move)
+                game.play_action(node.action)
 
-            # Play a move and add a child TreeNode if node isn't fully expanded.
-            if not node.is_expanded():
-                move = node.untried_moves.pop()
-                game.play_move(move)
-                node = node.add_child_node(game, node, move)
+                if node.is_not_leaf():
+                    # Switch the board to let the opponent play.
+                    game.switch_player_state()
 
-            # Loop until all moves are exhausted.
-            while len(game.get_valid_moves()) > 0:
-                moves = game.get_valid_moves()
-                game.play_move(choice(moves))
+            # Get move probabilities and values from the network for this state.
+            psa_vector, v = self.net.predict(game.state)
 
-            # Back propagate node statistics until the root node.
+            # Try expanding the current node.
+            node.expand_node(game=game, psa_vector=psa_vector)
+
+            # Back propagate node statistics up to the root node.
             while node is not None:
-                game_over, winner = game.check_game_over()
-                node.back_prop(node.last_player, winner)
+                game_over, wsa = game.check_game_over(game.player_to_eval)
+                node.back_prop(wsa, v)
                 node = node.parent
 
         highest_nsa = 0
         highest_index = 0
 
-        # Select the child's move with the highest visit count.
+        # Select the child's move stochastically using a temperature parameter.
         for idx, child in enumerate(self.root.children):
-            if child.Nsa > highest_nsa:
+            if child.Nsa ** (1.0 / temperature) > highest_nsa:
                 highest_nsa = child.Nsa
                 highest_index = idx
 
-        return self.root.children[highest_index].move
+        return self.root.children[highest_index]

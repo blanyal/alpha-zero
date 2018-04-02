@@ -22,7 +22,7 @@
 # ==============================================================================
 """Class to train the Neural Network."""
 from config import CFG
-from mcts import MonteCarloTreeSearch
+from mcts import MonteCarloTreeSearch, TreeNode
 
 
 class Train(object):
@@ -41,24 +41,55 @@ class Train(object):
     def start(self):
         """Main training loop."""
         for i in range(CFG.num_iterations):
-            for j in range(CFG.num_games):
-                self.play_game()
+            print("Iteration", i + 1)
 
-    def play_game(self):
+            for j in range(CFG.num_games):
+                game = self.game.clone()  # Create a fresh clone for each game.
+                self.play_game(game)
+
+    def play_game(self, game):
         """Loop for each self-play game.
 
         Runs MCTS for each game state and plays a move based on the MCTS output.
         Stops when the game is over and prints out a winner.
+
+        Args:
+            game: An object containing the game state.
         """
+        print("Start Self Play Game")
+
         mcts = MonteCarloTreeSearch(self.net)
 
         game_over = False
-        winner = 0
+        value = 0
+        move_count = 0
 
+        node = TreeNode()
+
+        # Keep playing until the game is in a terminal state.
         while not game_over:
-            move = mcts.search(self.game)
-            self.game.play_move(move)
-            self.game.print_board()
-            game_over, winner = self.game.check_game_over()
+            # MCTS simulations to get the best child node.
+            if move_count < CFG.temperature_thresh:
+                best_child = mcts.search(game, node, CFG.temperature_init)
+            else:
+                best_child = mcts.search(game, node, CFG.temperature_final)
 
-        print(winner)
+            action = best_child.action
+            game.play_action(action)  # Play the child node's action.
+            move_count += 1
+
+            game.print_board(game.player_to_eval)
+
+            game_over, value = game.check_game_over(game.player_to_eval)
+
+            game.switch_player_state()  # Switch the board,
+
+            best_child.parent = None
+            node = best_child  # Make the child node the root node.
+
+        if value is 1:
+            print("win")
+        elif value is -1:
+            print("loss")
+        else:
+            print("draw")

@@ -31,47 +31,47 @@ class TestTicTacToeGame(TestCase):
     def test_check_game_over_1(self):
         """Test case for the check_game_over function.
 
-        Test for game over with a winner.
+        Test for game over with a win.
         """
         game = TicTacToeGame()
-        game.state = [[1, 0, 2], [1, 0, 2], [1, 0, 2]]
-        game_over, winner = game.check_game_over()
+        game.state = [[1, 0, -1], [1, 0, -1], [1, 0, -1]]
+        game_over, value = game.check_game_over(1)
 
         self.assertEqual(game_over, True)
-        self.assertEqual(winner, 1)
+        self.assertEqual(value, 1)
 
     def test_check_game_over_2(self):
         """Test case for the check_game_over function.
 
-        Test for game over with a winner.
+        Test for game over with a loss.
         """
         game = TicTacToeGame()
-        game.state = [[1, 0, 2], [1, 1, 0], [1, 2, 2]]
-        game_over, winner = game.check_game_over()
+        game.state = [[1, 0, -1], [1, 1, 0], [1, -1, -1]]
+        game_over, value = game.check_game_over(-1)
 
         self.assertEqual(game_over, True)
-        self.assertEqual(winner, 1)
+        self.assertEqual(value, -1)
 
     def test_check_game_over_3(self):
         """Test case for the check_game_over function.
 
-        Test for game over for a draw.
+        Test for game over with a draw.
         """
         game = TicTacToeGame()
-        game.state = [[1, 1, 2], [2, 2, 1], [1, 1, 2]]
-        game_over, winner = game.check_game_over()
+        game.state = [[1, 1, -1], [-1, -1, 1], [1, 1, -1]]
+        game_over, value = game.check_game_over(1)
 
         self.assertEqual(game_over, True)
-        self.assertEqual(winner, 0)
+        self.assertEqual(value, 0.001)
 
     def test_check_game_over_4(self):
         """Test case for the check_game_over function.
 
-        Test for game not over and no winner.
+        Test for game not over.
         """
         game = TicTacToeGame()
-        game.state = [[2, 0, 0], [0, 2, 0], [0, 1, 0]]
-        game_over, winner = game.check_game_over()
+        game.state = [[-1, 0, 0], [0, -1, 0], [0, 1, 0]]
+        game_over, value = game.check_game_over(-1)
 
         self.assertEqual(game_over, False)
-        self.assertEqual(winner, None)
+        self.assertEqual(value, 0)

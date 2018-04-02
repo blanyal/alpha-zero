@@ -38,25 +38,32 @@ class Game(object):
         """
         pass
 
-    def play_move(self, move):
-        """Plays a move on the game board.
+    def play_action(self, action):
+        """Plays an action on the game board.
 
         Args:
-            move: A tuple in the form of (row, column).
+            action: A tuple in the form of (row, column).
         """
         pass
 
     def get_valid_moves(self):
-        """Returns a list of valid moves to play.
+        """Returns a list of moves along with their validity.
 
         Searches the board for zeros(0). 0 represents an empty square.
 
         Returns:
-            A list containing valid moves in the form of (row, column).
+            A list containing moves in the form of (validity, row, column).
         """
         pass
 
-    def check_game_over(self):
+    def switch_player_state(self):
+        """Change the board to the perspective of the opponent.
+
+        ie. all 1s are converted to -1s and vice versa
+        """
+        pass
+
+    def check_game_over(self, player_to_eval):
         """Checks if the game is over and return a possible winner.
 
         There are 3 possible scenarios.
@@ -64,12 +71,15 @@ class Game(object):
             b) The game is over but it is a draw.
             c) The game is not over.
 
+        Args:
+            player_to_eval: An integer representing the board's switch status.
+
         Returns:
             A bool representing the game over state.
-            An integer representing the winner.
+            An integer action value. (win: 1, loss: -1, draw: 0.001
         """
         pass
 
-    def print_board(self):
+    def print_board(self, player):
         """Prints the board state."""
         pass

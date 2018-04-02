@@ -24,6 +24,7 @@
 
 from config import CFG
 import tensorflow as tf
+import numpy as np
 
 
 class NeuralNetwork(object):
@@ -33,154 +34,205 @@ class NeuralNetwork(object):
         side: An integer indicating the length of the board side.
         pi: A TF tensor for the search probabilities.
         v: A TF tensor for the search values.
-        board_feature: A TF tensor with the dimensions of the board.
+        state: A TF tensor with the dimensions of the board.
         training: A TF boolean scalar tensor.
         pi_target: A TF tensor for the target search probabilities.
         v_target: A TF tensor for the target search values.
         loss_pi: A TF tensor for the output of softmax cross entropy on pi.
         loss_v: A TF tensor for the output of mean squared error on v.
         total_loss: A TF tensor to store the addition of pi and v losses.
-        train_step: A TF tensor for the train step of the optimizer.
+        train_op: A TF tensor for the train output of the optimizer.
+        summary: A TF tensor to log summaries.
+        saver: A TF saver for writing training checkpoints.
+        sess: A TF session for running Ops on the Graph.
     """
 
     def __init__(self, game):
+        """Initializes NeuralNetwork with the Resnet network graph."""
         self.side = game.side
+        self.action_size = game.action_size
         self.pi = None
         self.v = None
 
-        self.board_feature = tf.placeholder(tf.float32,
-                                            shape=[None, self.side, self.side])
-        self.training = tf.placeholder(tf.bool)
+        self.graph = tf.Graph()
+        with self.graph.as_default():
+            self.state = tf.placeholder(tf.float32,
+                                        shape=[None, self.side, self.side])
+            self.training = tf.placeholder(tf.bool)
 
-        # Input Layer
-        input_layer = tf.reshape(self.board_feature,
-                                 [-1, self.side, self.side, 1])
+            # Input Layer
+            input_layer = tf.reshape(self.state,
+                                     [-1, self.side, self.side, 1])
 
-        # Convolutional Block
-        conv1 = tf.layers.conv2d(
-            inputs=input_layer,
-            filters=256,
-            kernel_size=[3, 3],
-            padding="same",
-            strides=1)
+            # Convolutional Block
+            conv1 = tf.layers.conv2d(
+                inputs=input_layer,
+                filters=256,
+                kernel_size=[3, 3],
+                padding="same",
+                strides=1)
 
-        batch_norm1 = tf.layers.batch_normalization(
-            inputs=conv1,
-            training=self.training
-        )
+            batch_norm1 = tf.layers.batch_normalization(
+                inputs=conv1,
+                training=self.training
+            )
 
-        relu1 = tf.nn.relu(batch_norm1)
+            relu1 = tf.nn.relu(batch_norm1)
 
-        resnet_in_out = relu1
+            resnet_in_out = relu1
 
-        # Residual Tower
-        for i in range(20):
-            # Residual Block
-            conv2 = tf.layers.conv2d(
+            # Residual Tower
+            for i in range(20):
+                # Residual Block
+                conv2 = tf.layers.conv2d(
+                    inputs=resnet_in_out,
+                    filters=256,
+                    kernel_size=[3, 3],
+                    padding="same",
+                    strides=1)
+
+                batch_norm2 = tf.layers.batch_normalization(
+                    inputs=conv2,
+                    training=self.training
+                )
+
+                relu2 = tf.nn.relu(batch_norm2)
+
+                conv3 = tf.layers.conv2d(
+                    inputs=relu2,
+                    filters=256,
+                    kernel_size=[3, 3],
+                    padding="same",
+                    strides=1)
+
+                batch_norm3 = tf.layers.batch_normalization(
+                    inputs=conv3,
+                    training=self.training
+                )
+
+                resnet_skip = tf.add(batch_norm3, resnet_in_out)
+
+                resnet_in_out = tf.nn.relu(resnet_skip)
+
+            # Policy Head
+            conv4 = tf.layers.conv2d(
                 inputs=resnet_in_out,
-                filters=256,
-                kernel_size=[3, 3],
+                filters=2,
+                kernel_size=[1, 1],
                 padding="same",
                 strides=1)
 
-            batch_norm2 = tf.layers.batch_normalization(
-                inputs=conv2,
+            batch_norm4 = tf.layers.batch_normalization(
+                inputs=conv4,
                 training=self.training
             )
 
-            relu2 = tf.nn.relu(batch_norm2)
+            relu4 = tf.nn.relu(batch_norm4)
 
-            conv3 = tf.layers.conv2d(
-                inputs=relu2,
-                filters=256,
-                kernel_size=[3, 3],
+            relu4_flat = tf.reshape(relu4, [-1, self.side * self.side * 2])
+
+            logits = tf.layers.dense(inputs=relu4_flat, units=self.action_size)
+
+            self.pi = tf.nn.softmax(logits)
+
+            # Value Head
+            conv5 = tf.layers.conv2d(
+                inputs=resnet_in_out,
+                filters=1,
+                kernel_size=[1, 1],
                 padding="same",
                 strides=1)
 
-            batch_norm3 = tf.layers.batch_normalization(
-                inputs=conv3,
+            batch_norm5 = tf.layers.batch_normalization(
+                inputs=conv5,
                 training=self.training
             )
 
-            resnet_skip = tf.add(batch_norm3, resnet_in_out)
+            relu5 = tf.nn.relu(batch_norm5)
 
-            resnet_in_out = tf.nn.relu(resnet_skip)
+            relu5_flat = tf.reshape(relu5, [-1, 9])
 
-        # Policy Head
-        conv4 = tf.layers.conv2d(
-            inputs=resnet_in_out,
-            filters=2,
-            kernel_size=[1, 1],
-            padding="same",
-            strides=1)
+            dense1 = tf.layers.dense(inputs=relu5_flat,
+                                     units=9)
 
-        batch_norm4 = tf.layers.batch_normalization(
-            inputs=conv4,
-            training=self.training
-        )
+            relu6 = tf.nn.relu(dense1)
 
-        relu4 = tf.nn.relu(batch_norm4)
+            dense2 = tf.layers.dense(inputs=relu6,
+                                     units=1)
 
-        relu4_flat = tf.reshape(relu4, [-1, self.side * self.side * 2])
+            self.v = tf.nn.tanh(dense2)
 
-        self.pi = tf.layers.dense(inputs=relu4_flat,
-                                  units=(self.side * self.side) + 1)
+            # Loss Function
+            self.pi_target = tf.placeholder(tf.float32,
+                                            shape=[None, self.action_size])
+            self.v_target = tf.placeholder(tf.float32, shape=[None])
 
-        # Value Head
-        conv5 = tf.layers.conv2d(
-            inputs=resnet_in_out,
-            filters=1,
-            kernel_size=[1, 1],
-            padding="same",
-            strides=1)
+            self.loss_pi = tf.losses.softmax_cross_entropy(self.pi_target,
+                                                           self.pi)
+            self.loss_v = tf.losses.mean_squared_error(self.v_target,
+                                                       tf.reshape(self.v,
+                                                                  shape=[-1, ]))
+            self.total_loss = self.loss_pi + self.loss_v
 
-        batch_norm5 = tf.layers.batch_normalization(
-            inputs=conv5,
-            training=self.training
-        )
+            # Stochastic gradient descent with momentum
+            global_step = tf.Variable(0, trainable=False)
 
-        relu5 = tf.nn.relu(batch_norm5)
+            learning_rate = tf.train.exponential_decay(CFG.learning_rate,
+                                                       global_step,
+                                                       200000,
+                                                       0.96,
+                                                       staircase=True)
 
-        relu5_flat = tf.reshape(relu5, [-1, 256])
+            optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
+                                                   momentum=CFG.momentum,
+                                                   use_nesterov=False)
 
-        dense1 = tf.layers.dense(inputs=relu5_flat,
-                                 units=1024)
+            self.train_op = optimizer.minimize(self.total_loss,
+                                               global_step=global_step)
 
-        relu6 = tf.nn.relu(dense1)
+            # Build the summary Tensor based on the TF collection of Summaries.
+            self.summary = tf.summary.merge_all()
 
-        dense2 = tf.layers.dense(inputs=relu6,
-                                 units=1)
+            # Create a saver for writing training checkpoints.
+            self.saver = tf.train.Saver()
 
-        self.v = tf.nn.tanh(dense2)
+            # Create a session for running Ops on the Graph.
+            self.sess = tf.Session()
 
-        # Loss Function
-        self.pi_target = tf.placeholder(tf.float32,
-                                        shape=[None, self.side * self.side + 1])
-        self.v_target = tf.placeholder(tf.float32, shape=[None])
+            self.sess.run(tf.global_variables_initializer())
 
-        self.loss_pi = tf.losses.softmax_cross_entropy(self.pi_target, self.pi)
-        self.loss_v = tf.losses.mean_squared_error(self.v_target,
-                                                   tf.reshape(self.v,
-                                                              shape=[-1, ]))
-        self.total_loss = self.loss_pi + self.loss_v
 
-        # Stochastic gradient descent with momentum and learning rate annealing
-        global_step = tf.Variable(0, trainable=False)
+class NeuralNetworkWrapper(object):
+    """Wrapper class for the NeuralNetwork class.
 
-        learning_rate = tf.train.exponential_decay(CFG.learning_rate,
-                                                   global_step,
-                                                   200000,
-                                                   0.96,
-                                                   staircase=True)
+    Attributes:
+        game: An object containing the game state.
+        net: An object containing the neural network.
+        sess: A TF session for running Ops on the Graph.
+    """
 
-        optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
-                                               momentum=CFG.momentum_parameter,
-                                               use_nesterov=False)
+    def __init__(self, game):
+        """Initializes NeuralNetworkWrapper with game state and TF session."""
+        self.game = game
+        self.net = NeuralNetwork(self.game)
+        self.sess = self.net.sess
 
-        train_op = optimizer.minimize(self.total_loss,
-                                      global_step=global_step)
+    def predict(self, state):
+        """Predicts move probabilities and state values given a game state.
 
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        Args:
+            state: A list containing the game state in matrix form.
 
-        with tf.control_dependencies(update_ops):
-            self.train_step = train_op
+        Returns:
+            A probability vector and a value scalar
+        """
+        state = state[np.newaxis, :, :]
+
+        pi, v = self.sess.run([self.net.pi, self.net.v],
+                              feed_dict={self.net.state: state,
+                                         self.net.training: False})
+
+        # print("pi", pi[0])
+        # print("v", v[0])
+        # print("sum", sum(pi[0]))
+        return pi[0], v[0][0]

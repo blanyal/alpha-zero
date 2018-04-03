@@ -25,6 +25,7 @@
 from config import CFG
 import tensorflow as tf
 import numpy as np
+import os
 
 
 class NeuralNetwork(object):
@@ -34,7 +35,7 @@ class NeuralNetwork(object):
         side: An integer indicating the length of the board side.
         pi: A TF tensor for the search probabilities.
         v: A TF tensor for the search values.
-        state: A TF tensor with the dimensions of the board.
+        states: A TF tensor with the dimensions of the board.
         training: A TF boolean scalar tensor.
         train_pis: A TF tensor for the target search probabilities.
         train_vs: A TF tensor for the target search values.
@@ -42,7 +43,6 @@ class NeuralNetwork(object):
         loss_v: A TF tensor for the output of mean squared error on v.
         total_loss: A TF tensor to store the addition of pi and v losses.
         train_op: A TF tensor for the train output of the optimizer.
-        summary: A TF tensor to log summaries.
         saver: A TF saver for writing training checkpoints.
         sess: A TF session for running Ops on the Graph.
     """
@@ -190,15 +190,13 @@ class NeuralNetwork(object):
             self.train_op = optimizer.minimize(self.total_loss,
                                                global_step=global_step)
 
-            # Build the summary Tensor based on the TF collection of Summaries.
-            self.summary = tf.summary.merge_all()
-
             # Create a saver for writing training checkpoints.
             self.saver = tf.train.Saver()
 
             # Create a session for running Ops on the Graph.
             self.sess = tf.Session()
 
+            # Initialize the session.
             self.sess.run(tf.global_variables_initializer())
 
 
@@ -232,9 +230,6 @@ class NeuralNetworkWrapper(object):
                               feed_dict={self.net.states: state,
                                          self.net.training: False})
 
-        # print("pi", pi[0])
-        # print("v", v[0])
-        # print("sum", sum(pi[0]))
         return pi[0], v[0][0]
 
     def train(self, training_data):
@@ -243,12 +238,10 @@ class NeuralNetworkWrapper(object):
         Args:
             training_data: A list containing states, pis and vs
         """
-        print("Training the network.")
+        print("\nTraining the network.\n")
 
         for epoch in range(CFG.epochs):
             print("Epoch", epoch + 1)
-
-            # states, pis, vs = map(list, zip(*training_data))
 
             examples_num = len(training_data)
 
@@ -267,3 +260,31 @@ class NeuralNetworkWrapper(object):
 
                 self.sess.run([self.net.loss_pi, self.net.loss_v],
                               feed_dict=feed_dict)
+
+        print("\n")
+
+    def save_model(self, filename="current_model"):
+        """Saves the network model at the given file path.
+
+        Args:
+            filename: A string representing the model name.
+        """
+        # Create directory if it doesn't exist.
+        if not os.path.exists(CFG.model_directory):
+            os.mkdir(CFG.model_directory)
+
+        file_path = CFG.model_directory + filename
+
+        print("Saving model:", filename, "at", CFG.model_directory)
+        self.net.saver.save(self.sess, file_path)
+
+    def load_model(self, filename="current_model"):
+        """Loads the network model at the given file path.
+
+        Args:
+            filename: A string representing the model name.
+        """
+        file_path = CFG.model_directory + filename
+
+        print("Loading model:", filename, "from", CFG.model_directory)
+        self.net.saver.restore(self.sess, file_path)

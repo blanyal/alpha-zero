@@ -23,7 +23,8 @@
 """Class to train the Neural Network."""
 from config import CFG
 from mcts import MonteCarloTreeSearch, TreeNode
-import numpy as np
+from neural_net import NeuralNetworkWrapper
+from evaluate import Evaluate
 
 
 class Train(object):
@@ -38,6 +39,7 @@ class Train(object):
         """Initializes Train with the board state and neural network."""
         self.game = game
         self.net = net
+        self.eval_net = NeuralNetworkWrapper(game)
 
     def start(self):
         """Main training loop."""
@@ -50,8 +52,38 @@ class Train(object):
                 game = self.game.clone()  # Create a fresh clone for each game.
                 self.play_game(game, training_data)
 
+            # Save the current neural network model.
+            self.net.save_model()
+
+            # Load the recently saved model into the evaluator network.
+            self.eval_net.load_model()
+
             # Train the network using self play values.
             self.net.train(training_data)
+
+            # Initialize MonteCarloTreeSearch objects for both networks.
+            current_mcts = MonteCarloTreeSearch(self.net)
+            eval_mcts = MonteCarloTreeSearch(self.eval_net)
+
+            evaluator = Evaluate(current_mcts=current_mcts, eval_mcts=eval_mcts,
+                                 game=self.game)
+            wins, losses = evaluator.evaluate()
+
+            num_games = wins + losses
+
+            if num_games == 0:
+                win_rate = 0
+            else:
+                win_rate = wins / num_games
+
+            if win_rate > CFG.eval_win_rate:
+                # Save current model as the best model.
+                print("New model saved as best model.")
+                self.net.save_model("best_model")
+            else:
+                print("New model discard and previous model loaded.")
+                # Discard current model and use previous best model.
+                self.net.load_model()
 
     def play_game(self, game, training_data):
         """Loop for each self-play game.
@@ -63,7 +95,7 @@ class Train(object):
             game: An object containing the game state.
             training_data: A list to store self play states, pis and vs.
         """
-        print("Start Self Play Game")
+        print("Start Training Self-Play Game\n")
 
         mcts = MonteCarloTreeSearch(self.net)
 
@@ -90,8 +122,6 @@ class Train(object):
             self_play_data.append([game.state,
                                    best_child.parent.child_psas, 0])
 
-            game.print_board(game.player_to_eval)
-
             game_over, value = game.check_game_over(game.player_to_eval)
 
             game.switch_player_state()  # Switch the board,
@@ -104,9 +134,12 @@ class Train(object):
             game_state[2] = value
             training_data.append(game_state)
 
+        game.print_board(game.player_to_eval)
+
         if value is 1:
             print("win")
         elif value is -1:
             print("loss")
         else:
             print("draw")
+        print("\n")

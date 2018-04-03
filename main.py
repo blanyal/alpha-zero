@@ -24,11 +24,17 @@
 from tic_tac_toe.tic_tac_toe_game import TicTacToeGame
 from neural_net import NeuralNetworkWrapper
 from train import Train
+from config import CFG
 
 if __name__ == '__main__':
     """Initializes game state, neural network and the training loop"""
     game = TicTacToeGame()
     net = NeuralNetworkWrapper(game)
+
+    # Initialize the network with the best model.
+    if CFG.load_model:
+        net.load_model("best_model")
+
     train = Train(game, net)
 
     train.start()

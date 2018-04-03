@@ -42,8 +42,12 @@ class CFG(object):
         batch_size: Batch size for training.
         dirichlet_alpha: Alpha value for Dirichlet noise.
         epsilon: Value of epsilon for calculating Dirichlet noise.
+        model_directory: Name of the directory to store models.
+        num_eval_games: Number of self-play games to play for evaluation.
+        eval_win_rate: Win rate needed to be the best model.
+        load_model: Bool to initialize the network with the best model.
     """
-    num_iterations = 1
+    num_iterations = 2
     num_games = 2
     num_mcts_sims = 10
     c_puct = 1.0
@@ -58,3 +62,7 @@ class CFG(object):
     batch_size = 128
     dirichlet_alpha = 0.6
     epsilon = 0.25
+    model_directory = "./tic_tac_toe/models/"
+    num_eval_games = 5
+    eval_win_rate = 0.55
+    load_model = True

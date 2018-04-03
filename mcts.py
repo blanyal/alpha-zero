@@ -189,7 +189,10 @@ class MonteCarloTreeSearch(object):
 
         # Select the child's move stochastically using a temperature parameter.
         for idx, child in enumerate(self.root.children):
-            if child.Nsa ** (1.0 / temperature) > highest_nsa:
+
+            temperature_exponent = int(1 / temperature)
+
+            if child.Nsa ** temperature_exponent > highest_nsa:
                 highest_nsa = child.Nsa
                 highest_index = idx
 

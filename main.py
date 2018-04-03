@@ -24,6 +24,7 @@
 from tic_tac_toe.tic_tac_toe_game import TicTacToeGame
 from neural_net import NeuralNetworkWrapper
 from train import Train
+from human_play import HumanPlay
 from config import CFG
 
 if __name__ == '__main__':
@@ -35,6 +36,9 @@ if __name__ == '__main__':
     if CFG.load_model:
         net.load_model("best_model")
 
-    train = Train(game, net)
-
-    train.start()
+    if CFG.human_play:
+        human_play = HumanPlay(game, net)
+        human_play.play()
+    else:
+        train = Train(game, net)
+        train.start()

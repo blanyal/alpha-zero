@@ -22,6 +22,8 @@
 # ==============================================================================
 """Classes for Monte Carlo Tree Search."""
 from config import CFG
+from copy import deepcopy
+import numpy as np
 import math
 
 
@@ -38,7 +40,7 @@ class TreeNode(object):
         parent: A TreeNode representing the parent node.
     """
 
-    def __init__(self, parent=None, action=None, psa=0.0):
+    def __init__(self, parent=None, action=None, psa=0.0, child_psas=[]):
         """Initializes TreeNode with the initial statistics and data."""
         self.Nsa = 0
         self.Wsa = 0.0
@@ -46,6 +48,7 @@ class TreeNode(object):
         self.Psa = psa
         self.action = action
         self.children = []
+        self.child_psas = child_psas
         self.parent = parent
 
     def is_not_leaf(self):
@@ -86,6 +89,7 @@ class TreeNode(object):
             game: An object containing the game state.
             psa_vector: A list containing move probabilities for each move.
         """
+        self.child_psas = deepcopy(psa_vector)
         valid_moves = game.get_valid_moves()
         for idx, move in enumerate(valid_moves):
             if move[0] is not 0:
@@ -167,6 +171,10 @@ class MonteCarloTreeSearch(object):
             # Get move probabilities and values from the network for this state.
             psa_vector, v = self.net.predict(game.state)
 
+            # Add Dirichlet noise to the psa_vector of the root node.
+            if node.parent is None:
+                psa_vector = self.add_dirichlet_noise(game, psa_vector)
+
             # Try expanding the current node.
             node.expand_node(game=game, psa_vector=psa_vector)
 
@@ -186,3 +194,28 @@ class MonteCarloTreeSearch(object):
                 highest_index = idx
 
         return self.root.children[highest_index]
+
+    def add_dirichlet_noise(self, game, psa_vector):
+        """Add Dirichlet noise to the psa_vector of the root node.
+
+        This is for additional exploration.
+
+        Args:
+            game: An object containing the game state.
+            psa_vector: A probability vector.
+
+        Returns:
+            A probability vector which has Dirichlet noise added to it.
+        """
+        dirichlet_input = [CFG.dirichlet_alpha for x in
+                           range(game.action_size)]
+
+        dirichlet_list = np.random.dirichlet(dirichlet_input)
+
+        noisy_psa_vector = []
+
+        for idx, psa in enumerate(psa_vector):
+            noisy_psa_vector.append((1 - CFG.epsilon) * psa + CFG.epsilon * \
+                                    dirichlet_list[idx])
+
+        return noisy_psa_vector

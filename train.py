@@ -23,6 +23,7 @@
 """Class to train the Neural Network."""
 from config import CFG
 from mcts import MonteCarloTreeSearch, TreeNode
+import numpy as np
 
 
 class Train(object):
@@ -43,11 +44,16 @@ class Train(object):
         for i in range(CFG.num_iterations):
             print("Iteration", i + 1)
 
+            training_data = []  # list to store self play states, pis and vs
+
             for j in range(CFG.num_games):
                 game = self.game.clone()  # Create a fresh clone for each game.
-                self.play_game(game)
+                self.play_game(game, training_data)
 
-    def play_game(self, game):
+            # Train the network using self play values.
+            self.net.train(training_data)
+
+    def play_game(self, game, training_data):
         """Loop for each self-play game.
 
         Runs MCTS for each game state and plays a move based on the MCTS output.
@@ -55,6 +61,7 @@ class Train(object):
 
         Args:
             game: An object containing the game state.
+            training_data: A list to store self play states, pis and vs.
         """
         print("Start Self Play Game")
 
@@ -63,6 +70,7 @@ class Train(object):
         game_over = False
         value = 0
         move_count = 0
+        self_play_data = []
 
         node = TreeNode()
 
@@ -78,6 +86,10 @@ class Train(object):
             game.play_action(action)  # Play the child node's action.
             move_count += 1
 
+            # Store state, pi and v for training.
+            self_play_data.append([game.state,
+                                   best_child.parent.child_psas, 0])
+
             game.print_board(game.player_to_eval)
 
             game_over, value = game.check_game_over(game.player_to_eval)
@@ -86,6 +98,11 @@ class Train(object):
 
             best_child.parent = None
             node = best_child  # Make the child node the root node.
+
+        # Update v as the value of the game result.
+        for game_state in self_play_data:
+            game_state[2] = value
+            training_data.append(game_state)
 
         if value is 1:
             print("win")

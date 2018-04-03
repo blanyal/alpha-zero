@@ -37,9 +37,13 @@ class CFG(object):
         t_policy_val: Value for policy prediction.
         temperature_init: Initial Temperature parameter to control exploration.
         temperature_final: Initial Temperature parameter to control exploration.
-        temperature_thresh: Threshold where temperature init changes to final
+        temperature_thresh: Threshold where temperature init changes to final.
+        epochs: Number of epochs during training.
+        batch_size: Batch size for training.
+        dirichlet_alpha: Alpha value for Dirichlet noise.
+        epsilon: Value of epsilon for calculating Dirichlet noise.
     """
-    num_iterations = 2
+    num_iterations = 1
     num_games = 2
     num_mcts_sims = 10
     c_puct = 1.0
@@ -50,3 +54,7 @@ class CFG(object):
     temperature_init = 1
     temperature_final = 0.01
     temperature_thresh = 3
+    epochs = 10
+    batch_size = 128
+    dirichlet_alpha = 0.6
+    epsilon = 0.25

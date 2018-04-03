@@ -36,8 +36,8 @@ class NeuralNetwork(object):
         v: A TF tensor for the search values.
         state: A TF tensor with the dimensions of the board.
         training: A TF boolean scalar tensor.
-        pi_target: A TF tensor for the target search probabilities.
-        v_target: A TF tensor for the target search values.
+        train_pis: A TF tensor for the target search probabilities.
+        train_vs: A TF tensor for the target search values.
         loss_pi: A TF tensor for the output of softmax cross entropy on pi.
         loss_v: A TF tensor for the output of mean squared error on v.
         total_loss: A TF tensor to store the addition of pi and v losses.
@@ -56,12 +56,12 @@ class NeuralNetwork(object):
 
         self.graph = tf.Graph()
         with self.graph.as_default():
-            self.state = tf.placeholder(tf.float32,
-                                        shape=[None, self.side, self.side])
+            self.states = tf.placeholder(tf.float32,
+                                         shape=[None, self.side, self.side])
             self.training = tf.placeholder(tf.bool)
 
             # Input Layer
-            input_layer = tf.reshape(self.state,
+            input_layer = tf.reshape(self.states,
                                      [-1, self.side, self.side, 1])
 
             # Convolutional Block
@@ -163,13 +163,13 @@ class NeuralNetwork(object):
             self.v = tf.nn.tanh(dense2)
 
             # Loss Function
-            self.pi_target = tf.placeholder(tf.float32,
+            self.train_pis = tf.placeholder(tf.float32,
                                             shape=[None, self.action_size])
-            self.v_target = tf.placeholder(tf.float32, shape=[None])
+            self.train_vs = tf.placeholder(tf.float32, shape=[None])
 
-            self.loss_pi = tf.losses.softmax_cross_entropy(self.pi_target,
+            self.loss_pi = tf.losses.softmax_cross_entropy(self.train_pis,
                                                            self.pi)
-            self.loss_v = tf.losses.mean_squared_error(self.v_target,
+            self.loss_v = tf.losses.mean_squared_error(self.train_vs,
                                                        tf.reshape(self.v,
                                                                   shape=[-1, ]))
             self.total_loss = self.loss_pi + self.loss_v
@@ -229,10 +229,41 @@ class NeuralNetworkWrapper(object):
         state = state[np.newaxis, :, :]
 
         pi, v = self.sess.run([self.net.pi, self.net.v],
-                              feed_dict={self.net.state: state,
+                              feed_dict={self.net.states: state,
                                          self.net.training: False})
 
         # print("pi", pi[0])
         # print("v", v[0])
         # print("sum", sum(pi[0]))
         return pi[0], v[0][0]
+
+    def train(self, training_data):
+        """Trains the network using states, pis and vs from self play games.
+
+        Args:
+            training_data: A list containing states, pis and vs
+        """
+        print("Training the network.")
+
+        for epoch in range(CFG.epochs):
+            print("Epoch", epoch + 1)
+
+            # states, pis, vs = map(list, zip(*training_data))
+
+            examples_num = len(training_data)
+
+            # Divide epoch into batches.
+            for i in range(0, examples_num, CFG.batch_size):
+                states, pis, vs = map(list,
+                                      zip(*training_data[i:i + CFG.batch_size]))
+
+                feed_dict = {self.net.states: states,
+                             self.net.train_pis: pis,
+                             self.net.train_vs: vs,
+                             self.net.training: True}
+
+                self.sess.run(self.net.train_op,
+                              feed_dict=feed_dict)
+
+                self.sess.run([self.net.loss_pi, self.net.loss_v],
+                              feed_dict=feed_dict)

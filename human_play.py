@@ -53,7 +53,7 @@ class HumanPlay(object):
             # MCTS simulations to get the best child node.
             # If player_to_eval is 1 play as the Human.
             # Else play as the AI.
-            if game.player_to_eval == 1:
+            if game.current_player == 1:
                 action = input("Input Move: ")
                 if isinstance(action, str):
                     action = [int(n, 10) for n in action.split(",")]

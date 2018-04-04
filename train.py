@@ -105,7 +105,6 @@ class Train(object):
 
         game_over = False
         value = 0
-        move_count = 0
         self_play_data = []
 
         node = TreeNode()
@@ -113,39 +112,37 @@ class Train(object):
         # Keep playing until the game is in a terminal state.
         while not game_over:
             # MCTS simulations to get the best child node.
-            if move_count < CFG.temp_thresh:
-                best_child = mcts.search(game, node, CFG.temp_init)
-            else:
-                best_child = mcts.search(game, node, CFG.temp_final)
-
-            # Store state, pi and v for training.
-            self_play_data.append([game.state,
-                                   best_child.parent.child_psas,
-                                   0,
-                                   best_child.parent.player_to_eval])
+            best_child = mcts.search(game, node, CFG.temp_init)
 
             action = best_child.action
             game.play_action(action)  # Play the child node's action.
-            move_count += 1
 
-            game_over, value = game.check_game_over(game.player_to_eval)
+            # Store state, prob and v for training.
+            self_play_data.append([game.state, best_child.parent.child_psas, 0])
 
-            game.switch_player_state()  # Switch the board.
+            # game.print_board()
 
-            best_child.parent = None
-            node = best_child  # Make the child node the root node.
+            game_over, value = game.check_game_over(game.current_player)
+
+            if game_over:
+                # Store state, prob and v for training.
+                self_play_data.append(
+                    [game.state, best_child.parent.child_psas, 0])
+            else:
+                best_child.parent = None
+                node = best_child  # Make the child node the root node.
 
         # Update v as the value of the game result.
         for game_state in self_play_data:
-            game_state[2] = value * game_state[3]
-            game_state.pop()
+            value = -value
+            game_state[2] = value
             training_data.append(game_state)
 
         # game.print_board(game.player_to_eval)
 
-        if value == 1 * game.player_to_eval * -1:
+        if value == 1 * game.current_player:
             print("win")
-        elif value == -1 * game.player_to_eval * -1:
+        elif value == -1 * game.current_player:
             print("loss")
         else:
             print("draw")

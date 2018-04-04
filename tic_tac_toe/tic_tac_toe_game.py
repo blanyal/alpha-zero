@@ -31,8 +31,7 @@ class TicTacToeGame(Game):
 
     Attributes:
         side: An integer indicating the length of the board side.
-        player_value: An integer indicating the move value of the player.
-        player_to_eval: An integer to keep track of board switching.
+        current_player: An integer to keep track of the current player.
         state: A list which stores the game state in matrix form.
         action_size: An integer indicating the total number of board squares.
     """
@@ -41,8 +40,7 @@ class TicTacToeGame(Game):
         """Initializes TicTacToeGame with the initial board state."""
         super().__init__()
         self.side = 3
-        self.player_value = 1
-        self.player_to_eval = 1
+        self.current_player = 1
         self.state = []
         self.action_size = self.side * self.side
 
@@ -60,7 +58,7 @@ class TicTacToeGame(Game):
         """
         game_clone = TicTacToeGame()
         game_clone.state = deepcopy(self.state)
-        game_clone.player_to_eval = self.player_to_eval
+        game_clone.current_player = self.current_player
         return game_clone
 
     def play_action(self, action):
@@ -72,7 +70,8 @@ class TicTacToeGame(Game):
         x = action[0]
         y = action[1]
 
-        self.state[x][y] = self.player_value
+        self.state[x][y] = self.current_player
+        self.current_player = -self.current_player
 
     def get_valid_moves(self):
         """Returns a list of moves along with their validity.
@@ -93,15 +92,7 @@ class TicTacToeGame(Game):
 
         return np.array(valid_moves)
 
-    def switch_player_state(self):
-        """Change the board to the perspective of the opponent and track it.
-
-        ie. all 1s are converted to -1s and vice versa
-        """
-        self.player_to_eval = -1 * self.player_to_eval  # Track board switch.
-        self.state = -1 * self.state
-
-    def check_game_over(self, player_to_eval):
+    def check_game_over(self, current_player):
         """Checks if the game is over and return a possible winner.
 
         There are 3 possible scenarios.
@@ -110,18 +101,15 @@ class TicTacToeGame(Game):
             c) The game is not over.
 
         Args:
-            player_to_eval: An integer representing the board's switch status.
+            current_player: An integer representing the current player.
 
         Returns:
             A bool representing the game over state.
             An integer action value. (win: 1, loss: -1, draw: 0.001
         """
-        if player_to_eval == 1:
-            player_a = 1
-            player_b = -1
-        else:
-            player_a = -1
-            player_b = 1
+
+        player_a = current_player
+        player_b = -current_player
 
         # Check for horizontal marks
         for x in range(self.side):
@@ -188,25 +176,18 @@ class TicTacToeGame(Game):
                 return False, 0
 
         # If there are no moves left the game is over without a winner
-        return True, 0.001
+        return True, 0
 
-    def print_board(self, player_to_eval):
+    def print_board(self):
         """Prints the board state."""
-
-        if player_to_eval is 1:
-            player_a = 1
-            player_b = -1
-        else:
-            player_a = -1
-            player_b = 1
 
         for x in range(self.side):
             for y in range(self.side):
                 if self.state[x][y] == 0:
                     print('-    ', end='')
-                elif self.state[x][y] == player_a:
+                elif self.state[x][y] == 1:
                     print('X    ', end='')
-                elif self.state[x][y] == player_b:
+                elif self.state[x][y] == -1:
                     print('O    ', end='')
             print('\n')
         print('\n')

@@ -37,12 +37,11 @@ class TreeNode(object):
         Psa: A float for the prior probability of reaching this node.
         action: A tuple(row, column) of the prior move of reaching this node.
         children: A list which stores child nodes.
+        child_psas: A vector containing child probabilities.
         parent: A TreeNode representing the parent node.
-        player_to_eval: An integer to keep track of board switching.
     """
 
-    def __init__(self, parent=None, action=None, psa=0.0, child_psas=[],
-                 player_to_eval=1):
+    def __init__(self, parent=None, action=None, psa=0.0, child_psas=[]):
         """Initializes TreeNode with the initial statistics and data."""
         self.Nsa = 0
         self.Wsa = 0.0
@@ -52,7 +51,6 @@ class TreeNode(object):
         self.children = []
         self.child_psas = child_psas
         self.parent = parent
-        self.player_to_eval = player_to_eval
 
     def is_not_leaf(self):
         """Checks if a TreeNode is a leaf.
@@ -98,10 +96,9 @@ class TreeNode(object):
             if move[0] is not 0:
                 action = (move[1], move[2])
                 self.add_child_node(parent=self, action=action,
-                                    psa=psa_vector[idx],
-                                    player_to_eval=game.player_to_eval * -1)
+                                    psa=psa_vector[idx])
 
-    def add_child_node(self, parent, action, player_to_eval, psa=0.0):
+    def add_child_node(self, parent, action, psa=0.0):
         """Creates and adds a child TreeNode to the current node.
 
         Args:
@@ -113,8 +110,7 @@ class TreeNode(object):
             The newly created child TreeNode.
         """
 
-        child_node = TreeNode(parent=parent, action=action,
-                              psa=psa, player_to_eval=player_to_eval)
+        child_node = TreeNode(parent=parent, action=action, psa=psa)
         self.children.append(child_node)
         return child_node
 
@@ -127,7 +123,7 @@ class TreeNode(object):
         """
         self.Nsa += 1
         self.Wsa = wsa + v
-        self.Qsa = self.Wsa / self.Nsa
+        self.Qsa = (self.Nsa * self.Qsa + self.Wsa) / (1 + self.Nsa)
 
 
 class MonteCarloTreeSearch(object):
@@ -168,10 +164,6 @@ class MonteCarloTreeSearch(object):
                 node = node.select_child()
                 game.play_action(node.action)
 
-                if node.is_not_leaf():
-                    # Switch the board to let the opponent play.
-                    game.switch_player_state()
-
             # Get move probabilities and values from the network for this state.
             psa_vector, v = self.net.predict(game.state)
 
@@ -193,18 +185,20 @@ class MonteCarloTreeSearch(object):
             # Try expanding the current node.
             node.expand_node(game=game, psa_vector=psa_vector)
 
+            game_over, wsa = game.check_game_over(game.current_player)
+
             # Back propagate node statistics up to the root node.
             while node is not None:
-                game_over, wsa = game.check_game_over(node.player_to_eval)
+                wsa = -wsa
+                v = -v
                 node.back_prop(wsa, v)
                 node = node.parent
 
         highest_nsa = 0
         highest_index = 0
 
-        # Select the child's move stochastically using a temperature parameter.
+        # Select the child's move using a temperature parameter.
         for idx, child in enumerate(self.root.children):
-
             temperature_exponent = int(1 / temperature)
 
             if child.Nsa ** temperature_exponent > highest_nsa:
@@ -225,15 +219,13 @@ class MonteCarloTreeSearch(object):
         Returns:
             A probability vector which has Dirichlet noise added to it.
         """
-        dirichlet_input = [CFG.dirichlet_alpha for x in
-                           range(game.action_size)]
+        dirichlet_input = [CFG.dirichlet_alpha for x in range(game.action_size)]
 
         dirichlet_list = np.random.dirichlet(dirichlet_input)
-
         noisy_psa_vector = []
 
         for idx, psa in enumerate(psa_vector):
-            noisy_psa_vector.append((1 - CFG.epsilon) * psa + CFG.epsilon * \
-                                    dirichlet_list[idx])
+            noisy_psa_vector.append(
+                (1 - CFG.epsilon) * psa + CFG.epsilon * dirichlet_list[idx])
 
         return noisy_psa_vector

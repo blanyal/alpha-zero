@@ -63,7 +63,7 @@ class Evaluate(object):
                 # MCTS simulations to get the best child node.
                 # If player_to_eval is 1 play using the current network
                 # Else play using the evaluation network.
-                if game.player_to_eval == 1:
+                if game.current_player == 1:
                     best_child = self.current_mcts.search(game, node,
                                                           CFG.temp_final)
                 else:
@@ -73,19 +73,17 @@ class Evaluate(object):
                 action = best_child.action
                 game.play_action(action)  # Play the child node's action.
 
-                game.print_board(game.player_to_eval)
+                game.print_board()
 
-                game_over, value = game.check_game_over(game.player_to_eval)
-
-                game.switch_player_state()  # Switch the board,
+                game_over, value = game.check_game_over(game.current_player)
 
                 best_child.parent = None
                 node = best_child  # Make the child node the root node.
 
-            if value == 1:
+            if value == 1 * game.current_player:
                 print("win")
                 wins += 1
-            elif value == -1:
+            elif value == -1 * game.current_player:
                 print("loss")
                 losses += 1
             else:

@@ -56,14 +56,7 @@ class Game(object):
         """
         pass
 
-    def switch_player_state(self):
-        """Change the board to the perspective of the opponent.
-
-        ie. all 1s are converted to -1s and vice versa
-        """
-        pass
-
-    def check_game_over(self, player_to_eval):
+    def check_game_over(self, current_player):
         """Checks if the game is over and return a possible winner.
 
         There are 3 possible scenarios.
@@ -72,7 +65,7 @@ class Game(object):
             c) The game is not over.
 
         Args:
-            player_to_eval: An integer representing the board's switch status.
+            current_player: An integer representing the current player.
 
         Returns:
             A bool representing the game over state.
@@ -80,6 +73,6 @@ class Game(object):
         """
         pass
 
-    def print_board(self, player):
+    def print_board(self):
         """Prints the board state."""
         pass

@@ -47,24 +47,26 @@ class CFG(object):
         eval_win_rate: Win rate needed to be the best model.
         load_model: Bool to initialize the network with the best model.
         human_play: Bool to play as a Human vs the AI.
+        resnet_blocks: Number of residual blocks in the resnet.
     """
-    num_iterations = 5
-    num_games = 40
-    num_mcts_sims = 300
-    c_puct = 1.0
+    num_iterations = 1
+    num_games = 1
+    num_mcts_sims = 5
+    c_puct = 1
     l2_val = 0.0001
     momentum = 0.9
     learning_rate = 0.01
     t_policy_val = 0.0001
     temp_init = 1
     temp_final = 0.001
-    temp_thresh = 3
+    temp_thresh = 4
     epochs = 10
     batch_size = 128
     dirichlet_alpha = 0.8
     epsilon = 0.25
     model_directory = "./tic_tac_toe/models/"
-    num_eval_games = 16
+    num_eval_games = 1
     eval_win_rate = 0.55
     load_model = False
     human_play = False
+    resnet_blocks = 5

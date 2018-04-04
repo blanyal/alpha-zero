@@ -38,9 +38,11 @@ class TreeNode(object):
         action: A tuple(row, column) of the prior move of reaching this node.
         children: A list which stores child nodes.
         parent: A TreeNode representing the parent node.
+        player_to_eval: An integer to keep track of board switching.
     """
 
-    def __init__(self, parent=None, action=None, psa=0.0, child_psas=[]):
+    def __init__(self, parent=None, action=None, psa=0.0, child_psas=[],
+                 player_to_eval=1):
         """Initializes TreeNode with the initial statistics and data."""
         self.Nsa = 0
         self.Wsa = 0.0
@@ -50,6 +52,7 @@ class TreeNode(object):
         self.children = []
         self.child_psas = child_psas
         self.parent = parent
+        self.player_to_eval = player_to_eval
 
     def is_not_leaf(self):
         """Checks if a TreeNode is a leaf.
@@ -75,7 +78,7 @@ class TreeNode(object):
         # Select the child with the highest Q + U value
         for idx, child in enumerate(self.children):
             uct = child.Qsa + child.Psa * c_puct * (
-                    math.sqrt(self.Nsa) / 1 + child.Nsa)
+                    math.sqrt(self.Nsa) / (1 + child.Nsa))
             if uct > highest_uct:
                 highest_uct = uct
                 highest_index = idx
@@ -95,9 +98,10 @@ class TreeNode(object):
             if move[0] is not 0:
                 action = (move[1], move[2])
                 self.add_child_node(parent=self, action=action,
-                                    psa=psa_vector[idx])
+                                    psa=psa_vector[idx],
+                                    player_to_eval=game.player_to_eval * -1)
 
-    def add_child_node(self, parent, action, psa=0.0):
+    def add_child_node(self, parent, action, player_to_eval, psa=0.0):
         """Creates and adds a child TreeNode to the current node.
 
         Args:
@@ -110,7 +114,7 @@ class TreeNode(object):
         """
 
         child_node = TreeNode(parent=parent, action=action,
-                              psa=psa)
+                              psa=psa, player_to_eval=player_to_eval)
         self.children.append(child_node)
         return child_node
 
@@ -175,12 +179,23 @@ class MonteCarloTreeSearch(object):
             if node.parent is None:
                 psa_vector = self.add_dirichlet_noise(game, psa_vector)
 
+            valid_moves = game.get_valid_moves()
+            for idx, move in enumerate(valid_moves):
+                if move[0] is 0:
+                    psa_vector[idx] = 0
+
+            psa_vector_sum = sum(psa_vector)
+
+            # Renormalize psa vector
+            if psa_vector_sum > 0:
+                psa_vector /= psa_vector_sum
+
             # Try expanding the current node.
             node.expand_node(game=game, psa_vector=psa_vector)
 
             # Back propagate node statistics up to the root node.
             while node is not None:
-                game_over, wsa = game.check_game_over(game.player_to_eval)
+                game_over, wsa = game.check_game_over(node.player_to_eval)
                 node.back_prop(wsa, v)
                 node = node.parent
 

@@ -49,6 +49,7 @@ class Train(object):
             training_data = []  # list to store self play states, pis and vs
 
             for j in range(CFG.num_games):
+                print("Start Training Self-Play Game", j + 1)
                 game = self.game.clone()  # Create a fresh clone for each game.
                 self.play_game(game, training_data)
 
@@ -69,12 +70,17 @@ class Train(object):
                                  game=self.game)
             wins, losses = evaluator.evaluate()
 
+            print("wins:", wins)
+            print("losses:", losses)
+
             num_games = wins + losses
 
             if num_games == 0:
                 win_rate = 0
             else:
                 win_rate = wins / num_games
+
+            print("win rate:", win_rate)
 
             if win_rate > CFG.eval_win_rate:
                 # Save current model as the best model.
@@ -95,8 +101,6 @@ class Train(object):
             game: An object containing the game state.
             training_data: A list to store self play states, pis and vs.
         """
-        print("Start Training Self-Play Game\n")
-
         mcts = MonteCarloTreeSearch(self.net)
 
         game_over = False
@@ -109,37 +113,39 @@ class Train(object):
         # Keep playing until the game is in a terminal state.
         while not game_over:
             # MCTS simulations to get the best child node.
-            if move_count < CFG.temperature_thresh:
-                best_child = mcts.search(game, node, CFG.temperature_init)
+            if move_count < CFG.temp_thresh:
+                best_child = mcts.search(game, node, CFG.temp_init)
             else:
-                best_child = mcts.search(game, node, CFG.temperature_final)
+                best_child = mcts.search(game, node, CFG.temp_final)
+
+            # Store state, pi and v for training.
+            self_play_data.append([game.state,
+                                   best_child.parent.child_psas,
+                                   0,
+                                   best_child.parent.player_to_eval])
 
             action = best_child.action
             game.play_action(action)  # Play the child node's action.
             move_count += 1
 
-            # Store state, pi and v for training.
-            self_play_data.append([game.state,
-                                   best_child.parent.child_psas, 0])
-
             game_over, value = game.check_game_over(game.player_to_eval)
 
-            game.switch_player_state()  # Switch the board,
+            game.switch_player_state()  # Switch the board.
 
             best_child.parent = None
             node = best_child  # Make the child node the root node.
 
         # Update v as the value of the game result.
         for game_state in self_play_data:
-            game_state[2] = value
+            game_state[2] = value * game_state[3]
+            game_state.pop()
             training_data.append(game_state)
 
-        game.print_board(game.player_to_eval)
+        # game.print_board(game.player_to_eval)
 
-        if value is 1:
+        if value == 1 * game.player_to_eval * -1:
             print("win")
-        elif value is -1:
+        elif value == -1 * game.player_to_eval * -1:
             print("loss")
         else:
             print("draw")
-        print("\n")

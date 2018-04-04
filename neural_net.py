@@ -82,7 +82,7 @@ class NeuralNetwork(object):
             resnet_in_out = relu1
 
             # Residual Tower
-            for i in range(20):
+            for i in range(3):
                 # Residual Block
                 conv2 = tf.layers.conv2d(
                     inputs=resnet_in_out,
@@ -153,7 +153,7 @@ class NeuralNetwork(object):
             relu5_flat = tf.reshape(relu5, [-1, 9])
 
             dense1 = tf.layers.dense(inputs=relu5_flat,
-                                     units=9)
+                                     units=256)
 
             relu6 = tf.nn.relu(dense1)
 
@@ -179,7 +179,7 @@ class NeuralNetwork(object):
 
             learning_rate = tf.train.exponential_decay(CFG.learning_rate,
                                                        global_step,
-                                                       200000,
+                                                       20000,
                                                        0.96,
                                                        staircase=True)
 
@@ -247,8 +247,7 @@ class NeuralNetworkWrapper(object):
 
             # Divide epoch into batches.
             for i in range(0, examples_num, CFG.batch_size):
-                states, pis, vs = map(list,
-                                      zip(*training_data[i:i + CFG.batch_size]))
+                states, pis, vs = zip(*training_data[i:i + CFG.batch_size])
 
                 feed_dict = {self.net.states: states,
                              self.net.train_pis: pis,
@@ -258,8 +257,14 @@ class NeuralNetworkWrapper(object):
                 self.sess.run(self.net.train_op,
                               feed_dict=feed_dict)
 
-                self.sess.run([self.net.loss_pi, self.net.loss_v],
-                              feed_dict=feed_dict)
+                # print(total_loss)
+
+                pi_loss, v_loss = self.sess.run(
+                    [self.net.loss_pi, self.net.loss_v],
+                    feed_dict=feed_dict)
+
+                print("pi loss", pi_loss)
+                print("v loss", v_loss)
 
         print("\n")
 

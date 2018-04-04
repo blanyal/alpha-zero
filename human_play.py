@@ -63,7 +63,7 @@ class HumanPlay(object):
                 best_child.action = action
             else:
                 best_child = mcts.search(game, node,
-                                         CFG.temperature_final)
+                                         CFG.temp_final)
 
             action = best_child.action
             game.play_action(action)  # Play the child node's action.

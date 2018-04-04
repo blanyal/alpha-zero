@@ -65,10 +65,10 @@ class Evaluate(object):
                 # Else play using the evaluation network.
                 if game.player_to_eval == 1:
                     best_child = self.current_mcts.search(game, node,
-                                                          CFG.temperature_final)
+                                                          CFG.temp_final)
                 else:
                     best_child = self.eval_mcts.search(game, node,
-                                                       CFG.temperature_final)
+                                                       CFG.temp_final)
 
                 action = best_child.action
                 game.play_action(action)  # Play the child node's action.

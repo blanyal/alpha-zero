@@ -50,8 +50,8 @@ class CFG(object):
         resnet_blocks: Number of residual blocks in the resnet.
     """
     num_iterations = 4
-    num_games = 30
-    num_mcts_sims = 100
+    num_games = 40
+    num_mcts_sims = 50
     c_puct = 1
     l2_val = 0.0001
     momentum = 0.9
@@ -68,5 +68,5 @@ class CFG(object):
     num_eval_games = 16
     eval_win_rate = 0.55
     load_model = False
-    human_play = False
+    human_play = True
     resnet_blocks = 5

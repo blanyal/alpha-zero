@@ -48,13 +48,23 @@ class HumanPlay(object):
         value = 0
         node = TreeNode()
 
+        print("Enter your move in the form: row, column. Eg: 1,1")
+        go_first = input("Do you want to go first: y/n?")
+
+        if go_first.lower().strip() == 'y':
+            print("You play as X")
+            human_value = 1
+        else:
+            print("You play as O")
+            human_value = -1
+
         # Keep playing until the game is in a terminal state.
         while not game_over:
             # MCTS simulations to get the best child node.
             # If player_to_eval is 1 play as the Human.
             # Else play as the AI.
-            if game.current_player == 1:
-                action = input("Input Move: ")
+            if game.current_player == human_value:
+                action = input("Enter your move: ")
                 if isinstance(action, str):
                     action = [int(n, 10) for n in action.split(",")]
                     action = (action[0], action[1])
@@ -68,19 +78,17 @@ class HumanPlay(object):
             action = best_child.action
             game.play_action(action)  # Play the child node's action.
 
-            game.print_board(game.player_to_eval)
+            game.print_board()
 
-            game_over, value = game.check_game_over(game.player_to_eval)
-
-            game.switch_player_state()  # Switch the board,
+            game_over, value = game.check_game_over(game.current_player)
 
             best_child.parent = None
             node = best_child  # Make the child node the root node.
 
-        if value == 1:
-            print("win")
-        elif value == -1:
-            print("loss")
+        if value == human_value * game.current_player:
+            print("You won!")
+        elif value == -human_value * game.current_player:
+            print("You lost.")
         else:
-            print("draw")
+            print("Draw Match")
         print("\n")

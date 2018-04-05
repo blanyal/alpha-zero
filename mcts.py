@@ -123,7 +123,7 @@ class TreeNode(object):
         """
         self.Nsa += 1
         self.Wsa = wsa + v
-        self.Qsa = (self.Nsa * self.Qsa + self.Wsa) / (1 + self.Nsa)
+        self.Qsa = self.Wsa / self.Nsa
 
 
 class MonteCarloTreeSearch(object):

@@ -180,14 +180,15 @@ class TicTacToeGame(Game):
 
     def print_board(self):
         """Prints the board state."""
-
+        print("   0    1    2")
         for x in range(self.side):
+            print(x, end='')
             for y in range(self.side):
                 if self.state[x][y] == 0:
-                    print('-    ', end='')
+                    print('  -  ', end='')
                 elif self.state[x][y] == 1:
-                    print('X    ', end='')
+                    print('  X  ', end='')
                 elif self.state[x][y] == -1:
-                    print('O    ', end='')
+                    print('  O  ', end='')
             print('\n')
         print('\n')

@@ -89,7 +89,7 @@ class Train(object):
                 print("New model saved as best model.")
                 self.net.save_model("best_model")
             else:
-                print("New model discard and previous model loaded.")
+                print("New model discarded and previous model loaded.")
                 # Discard current model and use previous best model.
                 self.net.load_model()
 
@@ -120,22 +120,11 @@ class Train(object):
             game.play_action(action)  # Play the child node's action.
 
             # Store state, prob and v for training.
-            self_play_data.append(
-                [deepcopy(game.state), deepcopy(best_child.parent.child_psas),
-                 0])
-
-            # game.print_board()
+            self_play_data.append([deepcopy(game.state),
+                                   deepcopy(best_child.parent.child_psas),
+                                   0])
 
             game_over, value = game.check_game_over(game.current_player)
-
-            # if game_over:
-            #     # Store state, prob and v for training.
-            #     self_play_data.append(
-            #         [deepcopy(game.state), deepcopy(best_child.parent.child_psas),
-            #                0])
-            # else:
-            #     best_child.parent = None
-            #     node = best_child  # Make the child node the root node.
 
             best_child.parent = None
             node = best_child  # Make the child node the root node.
@@ -170,18 +159,12 @@ class Train(object):
         psa_vector = np.reshape(psa_vector, (3, 3))
 
         # Augment data by rotating the game state.
-        training_data.append([state,
-                              psa_vector.flatten(),
-                              game_state[2]])
 
-        training_data.append([np.rot90(state),
-                              np.rot90(psa_vector).flatten(),
-                              game_state[2]])
+        for i in range(4):
+            training_data.append([np.rot90(state, i),
+                                  np.rot90(psa_vector, i).flatten(),
+                                  game_state[2]])
 
-        training_data.append([np.rot90(state, 2),
-                              np.rot90(psa_vector, 2).flatten(),
-                              game_state[2]])
-
-        training_data.append([np.rot90(state, 3),
-                              np.rot90(psa_vector, 3).flatten(),
-                              game_state[2]])
+            training_data.append([np.fliplr(np.rot90(state, i)),
+                                  np.fliplr(np.rot90(psa_vector, i)).flatten(),
+                                  game_state[2]])

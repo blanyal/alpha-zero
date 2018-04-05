@@ -50,8 +50,8 @@ class Evaluate(object):
         losses = 0
 
         # Self-play loop
-        for j in range(CFG.num_eval_games):
-            print("Start Evaluation Self-Play Game\n")
+        for i in range(CFG.num_eval_games):
+            print("Start Evaluation Self-Play Game:", i, "\n")
 
             game = self.game.clone()  # Create a fresh clone for each game.
             game_over = False

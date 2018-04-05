@@ -22,8 +22,10 @@
 # ==============================================================================
 """Class for Board State and Logic."""
 from copy import deepcopy
-from game import Game
+
 import numpy as np
+
+from game import Game
 
 
 class TicTacToeGame(Game):

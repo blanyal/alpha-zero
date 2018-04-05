@@ -21,11 +21,12 @@
 # SOFTWARE.
 # ==============================================================================
 """Class to represent the Neural Network."""
+import os
 
-from config import CFG
 import tensorflow as tf
 import numpy as np
-import os
+
+from config import CFG
 
 
 class NeuralNetwork(object):

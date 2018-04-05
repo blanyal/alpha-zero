@@ -36,7 +36,7 @@ class CFG(object):
         learning_rate: Learning Rate for the momentum optimizer.
         t_policy_val: Value for policy prediction.
         temp_init: Initial Temperature parameter to control exploration.
-        temp_final: Initial Temperature parameter to control exploration.
+        temp_final: Final Temperature parameter to control exploration.
         temp_thresh: Threshold where temperature init changes to final.
         epochs: Number of epochs during training.
         batch_size: Batch size for training.
@@ -45,8 +45,8 @@ class CFG(object):
         model_directory: Name of the directory to store models.
         num_eval_games: Number of self-play games to play for evaluation.
         eval_win_rate: Win rate needed to be the best model.
-        load_model: Bool to initialize the network with the best model.
-        human_play: Bool to play as a Human vs the AI.
+        load_model: Binary to initialize the network with the best model.
+        human_play: Binary to play as a Human vs the AI.
         resnet_blocks: Number of residual blocks in the resnet.
     """
     num_iterations = 4
@@ -67,6 +67,6 @@ class CFG(object):
     model_directory = "./tic_tac_toe/models/"
     num_eval_games = 16
     eval_win_rate = 0.55
-    load_model = False
-    human_play = True
+    load_model = 0
+    human_play = 0
     resnet_blocks = 5

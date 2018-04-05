@@ -21,12 +21,13 @@
 # SOFTWARE.
 # ==============================================================================
 """Class to train the Neural Network."""
+import numpy as np
+
 from config import CFG
 from mcts import MonteCarloTreeSearch, TreeNode
 from neural_net import NeuralNetworkWrapper
 from evaluate import Evaluate
 from copy import deepcopy
-import numpy as np
 
 
 class Train(object):

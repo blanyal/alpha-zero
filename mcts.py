@@ -21,10 +21,12 @@
 # SOFTWARE.
 # ==============================================================================
 """Classes for Monte Carlo Tree Search."""
+import math
+
+import numpy as np
+
 from config import CFG
 from copy import deepcopy
-import numpy as np
-import math
 
 
 class TreeNode(object):

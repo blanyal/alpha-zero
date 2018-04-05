@@ -22,6 +22,7 @@
 # ==============================================================================
 """Class to run unit tests for the TicTacToeGame class."""
 from unittest import TestCase
+
 from tic_tac_toe.tic_tac_toe_game import TicTacToeGame
 
 

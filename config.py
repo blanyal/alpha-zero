@@ -49,9 +49,9 @@ class CFG(object):
         human_play: Bool to play as a Human vs the AI.
         resnet_blocks: Number of residual blocks in the resnet.
     """
-    num_iterations = 1
-    num_games = 1
-    num_mcts_sims = 5
+    num_iterations = 4
+    num_games = 30
+    num_mcts_sims = 100
     c_puct = 1
     l2_val = 0.0001
     momentum = 0.9
@@ -65,7 +65,7 @@ class CFG(object):
     dirichlet_alpha = 0.8
     epsilon = 0.25
     model_directory = "./tic_tac_toe/models/"
-    num_eval_games = 1
+    num_eval_games = 16
     eval_win_rate = 0.55
     load_model = False
     human_play = False

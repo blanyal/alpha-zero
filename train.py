@@ -25,6 +25,8 @@ from config import CFG
 from mcts import MonteCarloTreeSearch, TreeNode
 from neural_net import NeuralNetworkWrapper
 from evaluate import Evaluate
+from copy import deepcopy
+import numpy as np
 
 
 class Train(object):
@@ -118,25 +120,25 @@ class Train(object):
             game.play_action(action)  # Play the child node's action.
 
             # Store state, prob and v for training.
-            self_play_data.append([game.state, best_child.parent.child_psas, 0])
+            self_play_data.append(
+                [deepcopy(game.state), deepcopy(best_child.parent.child_psas),
+                 0])
 
             # game.print_board()
 
             game_over, value = game.check_game_over(game.current_player)
 
-            if game_over:
-                # Store state, prob and v for training.
-                self_play_data.append(
-                    [game.state, best_child.parent.child_psas, 0])
-            else:
-                best_child.parent = None
-                node = best_child  # Make the child node the root node.
+            # if game_over:
+            #     # Store state, prob and v for training.
+            #     self_play_data.append(
+            #         [deepcopy(game.state), deepcopy(best_child.parent.child_psas),
+            #                0])
+            # else:
+            #     best_child.parent = None
+            #     node = best_child  # Make the child node the root node.
 
-        # Update v as the value of the game result.
-        for game_state in self_play_data:
-            value = -value
-            game_state[2] = value
-            training_data.append(game_state)
+            best_child.parent = None
+            node = best_child  # Make the child node the root node.
 
         # game.print_board(game.player_to_eval)
 
@@ -146,3 +148,40 @@ class Train(object):
             print("loss")
         else:
             print("draw")
+
+        # Update v as the value of the game result.
+        for game_state in self_play_data:
+            value = -value
+            game_state[2] = value
+            self.augment_data(game_state, training_data)
+
+    def augment_data(self, game_state, training_data):
+        """Loop for each self-play game.
+
+        Runs MCTS for each game state and plays a move based on the MCTS output.
+        Stops when the game is over and prints out a winner.
+
+        Args:
+            game_state: An object containing the state, pis and value.
+            training_data: A list to store self play states, pis and vs.
+        """
+        state = deepcopy(game_state[0])
+        psa_vector = deepcopy(game_state[1])
+        psa_vector = np.reshape(psa_vector, (3, 3))
+
+        # Augment data by rotating the game state.
+        training_data.append([state,
+                              psa_vector.flatten(),
+                              game_state[2]])
+
+        training_data.append([np.rot90(state),
+                              np.rot90(psa_vector).flatten(),
+                              game_state[2]])
+
+        training_data.append([np.rot90(state, 2),
+                              np.rot90(psa_vector, 2).flatten(),
+                              game_state[2]])
+
+        training_data.append([np.rot90(state, 3),
+                              np.rot90(psa_vector, 3).flatten(),
+                              game_state[2]])

@@ -202,7 +202,7 @@ class MonteCarloTreeSearch(object):
             temperature_exponent = int(1 / temperature)
 
             if child.Nsa ** temperature_exponent > highest_nsa:
-                highest_nsa = child.Nsa
+                highest_nsa = child.Nsa ** temperature_exponent
                 highest_index = idx
 
         return self.root.children[highest_index]

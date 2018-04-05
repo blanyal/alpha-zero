@@ -33,9 +33,8 @@ class NeuralNetwork(object):
 
     Attributes:
         side: An integer indicating the length of the board side.
-        action_size:
-        prob: A TF tensor for the search logits.
-        prob: A TF tensor for the search probabilities.
+        action_size: An integer indicating the total number of board squares.
+        pi: A TF tensor for the search probabilities.
         v: A TF tensor for the search values.
         states: A TF tensor with the dimensions of the board.
         training: A TF boolean scalar tensor.
@@ -133,9 +132,9 @@ class NeuralNetwork(object):
 
             relu4_flat = tf.reshape(relu4, [-1, self.side * self.side * 2])
 
-            self.pi = tf.layers.dense(inputs=relu4_flat, units=self.action_size)
+            logits = tf.layers.dense(inputs=relu4_flat, units=self.action_size)
 
-            self.prob = tf.nn.softmax(self.pi)
+            self.pi = tf.nn.softmax(logits)
 
             # Value Head
             conv5 = tf.layers.conv2d(
@@ -169,9 +168,8 @@ class NeuralNetwork(object):
                                             shape=[None, self.action_size])
             self.train_vs = tf.placeholder(tf.float32, shape=[None])
 
-            self.loss_pi = tf.nn.softmax_cross_entropy_with_logits(
-                labels=self.train_pis,
-                logits=self.pi)
+            self.loss_pi = tf.losses.softmax_cross_entropy(self.train_pis,
+                                                           self.pi)
             self.loss_v = tf.losses.mean_squared_error(self.train_vs,
                                                        tf.reshape(self.v,
                                                                   shape=[-1, ]))
@@ -229,11 +227,11 @@ class NeuralNetworkWrapper(object):
         """
         state = state[np.newaxis, :, :]
 
-        prob, v = self.sess.run([self.net.prob, self.net.v],
-                                feed_dict={self.net.states: state,
-                                           self.net.training: False})
+        pi, v = self.sess.run([self.net.pi, self.net.v],
+                              feed_dict={self.net.states: state,
+                                         self.net.training: False})
 
-        return prob[0], v[0][0]
+        return pi[0], v[0][0]
 
     def train(self, training_data):
         """Trains the network using states, pis and vs from self play games.

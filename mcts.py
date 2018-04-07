@@ -93,10 +93,10 @@ class TreeNode(object):
             psa_vector: A list containing move probabilities for each move.
         """
         self.child_psas = deepcopy(psa_vector)
-        valid_moves = game.get_valid_moves()
+        valid_moves = game.get_valid_moves(game.current_player)
         for idx, move in enumerate(valid_moves):
             if move[0] is not 0:
-                action = (move[1], move[2])
+                action = deepcopy(move)
                 self.add_child_node(parent=self, action=action,
                                     psa=psa_vector[idx])
 
@@ -173,7 +173,7 @@ class MonteCarloTreeSearch(object):
             if node.parent is None:
                 psa_vector = self.add_dirichlet_noise(game, psa_vector)
 
-            valid_moves = game.get_valid_moves()
+            valid_moves = game.get_valid_moves(game.current_player)
             for idx, move in enumerate(valid_moves):
                 if move[0] is 0:
                     psa_vector[idx] = 0

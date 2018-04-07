@@ -22,13 +22,14 @@
 # ==============================================================================
 """Class for Board State and Logic."""
 from copy import deepcopy
+from collections import Counter
 
 import numpy as np
 
 from game import Game
 
 
-class TicTacToeGame(Game):
+class OthelloGame(Game):
     """Represents the game board and its logic.
 
     Attributes:
@@ -36,12 +37,13 @@ class TicTacToeGame(Game):
         current_player: An integer to keep track of the current player.
         state: A list which stores the game state in matrix form.
         action_size: An integer indicating the total number of board squares.
+        directions: A dictionary containing tuples to check for valid moves.
     """
 
     def __init__(self):
         """Initializes TicTacToeGame with the initial board state."""
         super().__init__()
-        self.side = 3
+        self.side = 6
         self.current_player = 1
         self.state = []
         self.action_size = self.side * self.side
@@ -50,7 +52,23 @@ class TicTacToeGame(Game):
         for i in range(self.side):
             self.state.append([0 * j for j in range(self.side)])
 
+        self.state[(self.side // 2) - 1][(self.side // 2) - 1] = -1
+        self.state[(self.side // 2)][(self.side // 2)] = -1
+        self.state[(self.side // 2) - 1][(self.side // 2)] = 1
+        self.state[(self.side // 2)][(self.side // 2) - 1] = 1
+
         self.state = np.array(self.state)
+
+        self.directions = {
+            0: (-1, -1),
+            1: (-1, 0),
+            2: (-1, 1),
+            3: (0, -1),
+            4: (0, 1),
+            5: (1, -1),
+            6: (1, 0),
+            7: (1, 1)
+        }
 
     def clone(self):
         """Creates a deep clone of the game object.
@@ -58,7 +76,7 @@ class TicTacToeGame(Game):
         Returns:
             the cloned game object.
         """
-        game_clone = TicTacToeGame()
+        game_clone = OthelloGame()
         game_clone.state = deepcopy(self.state)
         game_clone.current_player = self.current_player
         return game_clone
@@ -67,30 +85,83 @@ class TicTacToeGame(Game):
         """Plays an action on the game board.
 
         Args:
-            action: A tuple in the form of (row, column).
+            action: A tuple in the form of (row, column, direction).
         """
         x = action[1]
         y = action[2]
+        d = action[3]
 
         self.state[x][y] = self.current_player
+
+        count = 1
+
+        # Flip all opponent pieces which are in the sandwich.
+        while True:
+            row = x + d[0] * count
+            col = y + d[1] * count
+
+            if self.state[row][col] == -self.current_player:
+                self.state[row][col] = self.current_player
+                count += 1
+            else:
+                break
+
         self.current_player = -self.current_player
 
     def get_valid_moves(self, current_player):
         """Returns a list of moves along with their validity.
 
-        Searches the board for zeros(0). 0 represents an empty square.
+        Searches the board for valid sandwich moves.
 
         Returns:
-            A list containing moves in the form of (validity, row, column).
+            A list containing moves as (validity, row, column, direction).
         """
         valid_moves = []
 
+        pl = current_player
+
+        side = self.side
+
         for x in range(self.side):
             for y in range(self.side):
+                found = False
+
+                # Search for empty squares.
                 if self.state[x][y] == 0:
-                    valid_moves.append((1, x, y))
-                else:
-                    valid_moves.append((0, None, None))
+
+                    # Search in all 8 directions for a square of the opponent.
+                    for i in range(len(self.directions)):
+                        d = self.directions[i]
+
+                        row = x + d[0]
+                        col = y + d[1]
+
+                        if row < side and col < side:
+                            if self.state[row][col] == -pl:
+                                found_valid_move = False
+                                count = 2
+
+                                # Keep searching for a sandwich condition.
+                                while True:
+                                    row = x + d[0] * count
+                                    col = y + d[1] * count
+
+                                    if 0 <= row < side and 0 <= col < side:
+                                        if self.state[row][col] == pl:
+                                            valid_moves.append((1, x, y, d))
+                                            found_valid_move = True
+                                            break
+                                    else:
+                                        break
+
+                                    count += 1
+
+                                if found_valid_move:
+                                    found = True
+                                    break
+
+                if not found:
+                    valid_moves.append((0, None, None, None))
 
         return np.array(valid_moves)
 
@@ -113,76 +184,30 @@ class TicTacToeGame(Game):
         player_a = current_player
         player_b = -current_player
 
-        # Check for horizontal marks
-        for x in range(self.side):
-            player_a_count = 0
-            player_b_count = 0
-            for y in range(self.side):
-                if self.state[x][y] == player_a:
-                    player_a_count += 1
-                elif self.state[x][y] == player_b:
-                    player_b_count += 1
-            if player_a_count == self.side:
+        player_a_moves = self.get_valid_moves(player_a)
+        player_b_moves = self.get_valid_moves(player_b)
+
+        player_a_valid_count = Counter(x[0] == 1 for x in player_a_moves)
+        player_b_valid_count = Counter(x[0] == 1 for x in player_b_moves)
+
+        # Check if both players can't play any more moves.
+        if player_a_valid_count[True] == 0 or player_b_valid_count[True] == 0:
+            unique, piece_count = np.unique(self.state,
+                                            return_counts=True)
+
+            # Check for the player with the most number of pieces.
+            if piece_count[player_a] > piece_count[player_b]:
                 return True, 1
-            elif player_b_count == self.side:
+            elif piece_count[player_a] == piece_count[player_b]:
+                return True, 0
+            else:
                 return True, -1
-
-        # Check for vertical marks
-        for x in range(self.side):
-            player_a_count = 0
-            player_b_count = 0
-            for y in range(self.side):
-                if self.state[y][x] == player_a:
-                    player_a_count += 1
-                elif self.state[y][x] == player_b:
-                    player_b_count += 1
-            if player_a_count == self.side:
-                return True, 1
-            elif player_b_count == self.side:
-                return True, -1
-
-        # Check for major diagonal marks
-        player_a_count = 0
-        player_b_count = 0
-        for x in range(self.side):
-            if self.state[x][x] == player_a:
-                player_a_count += 1
-            elif self.state[x][x] == player_b:
-                player_b_count += 1
-
-        if player_a_count == self.side:
-            return True, 1
-        elif player_b_count == self.side:
-            return True, -1
-
-        # Check for minor diagonal marks
-        player_a_count = 0
-        player_b_count = 0
-        for y in range(self.side - 1, -1, -1):
-            x = 2 - y
-            if self.state[x][y] == player_a:
-                player_a_count += 1
-            elif self.state[x][y] == player_b:
-                player_b_count += 1
-
-        if player_a_count == self.side:
-            return True, 1
-        elif player_b_count == self.side:
-            return True, -1
-
-        # There are still moves left so the game is not over
-        valid_moves = self.get_valid_moves(current_player)
-
-        for move in valid_moves:
-            if move[0] is 1:
-                return False, 0
-
-        # If there are no moves left the game is over without a winner
-        return True, 0
+        else:
+            return False, 0
 
     def print_board(self):
         """Prints the board state."""
-        print("   0    1    2")
+        print("   0    1    2    3    4    5")
         for x in range(self.side):
             print(x, end='')
             for y in range(self.side):

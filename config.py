@@ -48,10 +48,13 @@ class CFG(object):
         load_model: Binary to initialize the network with the best model.
         human_play: Binary to play as a Human vs the AI.
         resnet_blocks: Number of residual blocks in the resnet.
+        record_loss: Binary to record policy and value loss to a file.
+        loss_file: Name of the file to record loss.
+        game: Number of the game. 0: Tic Tac Toe, 1: Othello.
     """
-    num_iterations = 4
-    num_games = 40
-    num_mcts_sims = 50
+    num_iterations = 10
+    num_games = 30
+    num_mcts_sims = 30
     c_puct = 1
     l2_val = 0.0001
     momentum = 0.9
@@ -65,8 +68,11 @@ class CFG(object):
     dirichlet_alpha = 0.8
     epsilon = 0.25
     model_directory = "./tic_tac_toe/models/"
-    num_eval_games = 16
+    num_eval_games = 10
     eval_win_rate = 0.55
-    load_model = 0
+    load_model = 1
     human_play = 0
     resnet_blocks = 5
+    record_loss = 1
+    loss_file = "loss.txt"
+    game = 0

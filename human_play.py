@@ -67,7 +67,7 @@ class HumanPlay(object):
                 action = input("Enter your move: ")
                 if isinstance(action, str):
                     action = [int(n, 10) for n in action.split(",")]
-                    action = (action[0], action[1])
+                    action = (1, action[0], action[1])
 
                 best_child = TreeNode()
                 best_child.action = action

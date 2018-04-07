@@ -63,7 +63,7 @@ class TestTicTacToeGame(TestCase):
         game_over, value = game.check_game_over(1)
 
         self.assertEqual(game_over, True)
-        self.assertEqual(value, 0.001)
+        self.assertEqual(value, 0)
 
     def test_check_game_over_4(self):
         """Test case for the check_game_over function.

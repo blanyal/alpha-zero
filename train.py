@@ -117,35 +117,26 @@ class Train(object):
             # MCTS simulations to get the best child node.
             best_child = mcts.search(game, node, CFG.temp_init)
 
-            action = best_child.action
-            game.play_action(action)  # Play the child node's action.
-
             # Store state, prob and v for training.
             self_play_data.append([deepcopy(game.state),
                                    deepcopy(best_child.parent.child_psas),
                                    0])
+
+            action = best_child.action
+            game.play_action(action)  # Play the child node's action.
 
             game_over, value = game.check_game_over(game.current_player)
 
             best_child.parent = None
             node = best_child  # Make the child node the root node.
 
-        # game.print_board(game.player_to_eval)
-
-        if value == 1 * game.current_player:
-            print("win")
-        elif value == -1 * game.current_player:
-            print("loss")
-        else:
-            print("draw")
-
         # Update v as the value of the game result.
         for game_state in self_play_data:
             value = -value
             game_state[2] = value
-            self.augment_data(game_state, training_data)
+            self.augment_data(game_state, training_data, game.side)
 
-    def augment_data(self, game_state, training_data):
+    def augment_data(self, game_state, training_data, side):
         """Loop for each self-play game.
 
         Runs MCTS for each game state and plays a move based on the MCTS output.
@@ -154,13 +145,13 @@ class Train(object):
         Args:
             game_state: An object containing the state, pis and value.
             training_data: A list to store self play states, pis and vs.
+            side: An integer representing the length of side.
         """
         state = deepcopy(game_state[0])
         psa_vector = deepcopy(game_state[1])
-        psa_vector = np.reshape(psa_vector, (3, 3))
+        psa_vector = np.reshape(psa_vector, (side, side))
 
-        # Augment data by rotating the game state.
-
+        # Augment data by rotating and flipping the game state.
         for i in range(4):
             training_data.append([np.rot90(state, i),
                                   np.rot90(psa_vector, i).flatten(),

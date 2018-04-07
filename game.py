@@ -46,13 +46,11 @@ class Game(object):
         """
         pass
 
-    def get_valid_moves(self):
+    def get_valid_moves(self, current_player):
         """Returns a list of moves along with their validity.
 
-        Searches the board for zeros(0). 0 represents an empty square.
-
         Returns:
-            A list containing moves in the form of (validity, row, column).
+            A list containing moves in the form of (validity, row, column, ?).
         """
         pass
 

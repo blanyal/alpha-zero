@@ -58,6 +58,8 @@ class Evaluate(object):
             value = 0
             node = TreeNode()
 
+            player = game.current_player
+
             # Keep playing until the game is in a terminal state.
             while not game_over:
                 # MCTS simulations to get the best child node.
@@ -75,15 +77,15 @@ class Evaluate(object):
 
                 game.print_board()
 
-                game_over, value = game.check_game_over(game.current_player)
+                game_over, value = game.check_game_over(player)
 
                 best_child.parent = None
                 node = best_child  # Make the child node the root node.
 
-            if value == 1 * game.current_player:
+            if value == 1:
                 print("win")
                 wins += 1
-            elif value == -1 * game.current_player:
+            elif value == -1:
                 print("loss")
                 losses += 1
             else:

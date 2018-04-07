@@ -25,6 +25,7 @@ import argparse
 import os
 
 from tic_tac_toe.tic_tac_toe_game import TicTacToeGame
+from othello.othello_game import OthelloGame
 from neural_net import NeuralNetworkWrapper
 from train import Train
 from human_play import HumanPlay
@@ -159,6 +160,24 @@ parser.add_argument("--resnet_blocks",
                     type=int,
                     default=CFG.resnet_blocks)
 
+parser.add_argument("--record_loss",
+                    help="Binary to record policy and value loss to a file.",
+                    dest="record_loss",
+                    type=int,
+                    default=CFG.record_loss)
+
+parser.add_argument("--loss_file",
+                    help="Name of the file to record loss.",
+                    dest="loss_file",
+                    type=str,
+                    default=CFG.loss_file)
+
+parser.add_argument("--game",
+                    help="Name of the file to record loss.",
+                    dest="game",
+                    type=int,
+                    default=CFG.game)
+
 if __name__ == '__main__':
     """Initializes game state, neural network and the training loop"""
     arguments = parser.parse_args()
@@ -185,8 +204,17 @@ if __name__ == '__main__':
     CFG.load_model = arguments.load_model
     CFG.human_play = arguments.human_play
     CFG.resnet_blocks = arguments.resnet_blocks
+    CFG.record_loss = arguments.record_loss
+    CFG.loss_file = arguments.loss_file
+    CFG.game = arguments.game
 
-    game = TicTacToeGame()
+    # Initialize the game object with the chosen game.
+    game = object
+    if CFG.game == 0:
+        game = TicTacToeGame()
+    elif CFG.game == 1:
+        game = OthelloGame()
+
     net = NeuralNetworkWrapper(game)
 
     # Initialize the network with the best model.
@@ -199,6 +227,7 @@ if __name__ == '__main__':
     else:
         print("Trained model not loaded. Starting from scratch.")
 
+    # Play vs the AI as a human instead of training.
     if CFG.human_play:
         human_play = HumanPlay(game, net)
         human_play.play()

@@ -152,7 +152,7 @@ class NeuralNetwork(object):
 
             relu5 = tf.nn.relu(batch_norm5)
 
-            relu5_flat = tf.reshape(relu5, [-1, 9])
+            relu5_flat = tf.reshape(relu5, [-1, self.action_size])
 
             dense1 = tf.layers.dense(inputs=relu5_flat,
                                      units=256)
@@ -260,14 +260,20 @@ class NeuralNetworkWrapper(object):
                 self.sess.run(self.net.train_op,
                               feed_dict=feed_dict)
 
-                # print(total_loss)
-
                 pi_loss, v_loss = self.sess.run(
                     [self.net.loss_pi, self.net.loss_v],
                     feed_dict=feed_dict)
 
-                print("pi loss", pi_loss)
-                print("v loss", v_loss)
+                # Record pi and v loss to a file.
+                if CFG.record_loss:
+                    # Create directory if it doesn't exist.
+                    if not os.path.exists(CFG.model_directory):
+                        os.mkdir(CFG.model_directory)
+
+                    file_path = CFG.model_directory + CFG.loss_file
+
+                    with open(file_path, 'a') as loss_file:
+                        loss_file.write('%f|%f\n' % (pi_loss, v_loss))
 
         print("\n")
 

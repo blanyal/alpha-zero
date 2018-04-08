@@ -54,6 +54,8 @@ class HumanPlay(object):
         if go_first.lower().strip() == 'y':
             print("You play as X")
             human_value = 1
+
+            game.print_board()
         else:
             print("You play as O")
             human_value = -1

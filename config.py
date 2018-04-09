@@ -52,7 +52,7 @@ class CFG(object):
         loss_file: Name of the file to record loss.
         game: Number of the game. 0: Tic Tac Toe, 1: Othello.
     """
-    num_iterations = 10
+    num_iterations = 6
     num_games = 30
     num_mcts_sims = 30
     c_puct = 1

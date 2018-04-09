@@ -177,20 +177,20 @@ class NeuralNetwork(object):
             self.total_loss = self.loss_pi + self.loss_v
 
             # Stochastic gradient descent with momentum
-            global_step = tf.Variable(0, trainable=False)
+            # global_step = tf.Variable(0, trainable=False)
 
-            learning_rate = tf.train.exponential_decay(CFG.learning_rate,
-                                                       global_step,
-                                                       20000,
-                                                       0.96,
-                                                       staircase=True)
+            # learning_rate = tf.train.exponential_decay(CFG.learning_rate,
+            #                                            global_step,
+            #                                            20000,
+            #                                            0.96,
+            #                                            staircase=True)
 
-            optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate,
-                                                   momentum=CFG.momentum,
-                                                   use_nesterov=False)
+            optimizer = tf.train.MomentumOptimizer(
+                learning_rate=CFG.learning_rate,
+                momentum=CFG.momentum,
+                use_nesterov=False)
 
-            self.train_op = optimizer.minimize(self.total_loss,
-                                               global_step=global_step)
+            self.train_op = optimizer.minimize(self.total_loss)
 
             # Create a saver for writing training checkpoints.
             self.saver = tf.train.Saver()

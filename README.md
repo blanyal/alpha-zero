@@ -16,7 +16,7 @@ Games implemented:
 ## Usage
 **To train the model from scratch.**:
 ```
-python main.py
+python main.py --load_model 0
 ``` 
 
 **To train the model using the previous best model as a starting point**:

@@ -109,13 +109,17 @@ class Train(object):
         game_over = False
         value = 0
         self_play_data = []
+        count = 0
 
         node = TreeNode()
 
         # Keep playing until the game is in a terminal state.
         while not game_over:
             # MCTS simulations to get the best child node.
-            best_child = mcts.search(game, node, CFG.temp_init)
+            if count < CFG.temp_thresh:
+                best_child = mcts.search(game, node, CFG.temp_init)
+            else:
+                best_child = mcts.search(game, node, CFG.temp_final)
 
             # Store state, prob and v for training.
             self_play_data.append([deepcopy(game.state),
@@ -124,6 +128,7 @@ class Train(object):
 
             action = best_child.action
             game.play_action(action)  # Play the child node's action.
+            count += 1
 
             game_over, value = game.check_game_over(game.current_player)
 

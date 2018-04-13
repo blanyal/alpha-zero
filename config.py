@@ -62,10 +62,10 @@ class CFG(object):
     t_policy_val = 0.0001
     temp_init = 1
     temp_final = 0.001
-    temp_thresh = 4
+    temp_thresh = 10
     epochs = 10
     batch_size = 128
-    dirichlet_alpha = 0.8
+    dirichlet_alpha = 0.5
     epsilon = 0.25
     model_directory = "./connect_four/models/"
     num_eval_games = 12

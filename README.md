@@ -7,6 +7,8 @@ the board state and play the most promising move.
 
 Games implemented:
 1) Tic Tac Toe
+2) Othello
+3) Connect Four
 
 ## Requirements
  - TensorFlow (Tested on 1.4.0)

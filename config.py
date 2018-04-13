@@ -50,9 +50,9 @@ class CFG(object):
         resnet_blocks: Number of residual blocks in the resnet.
         record_loss: Binary to record policy and value loss to a file.
         loss_file: Name of the file to record loss.
-        game: Number of the game. 0: Tic Tac Toe, 1: Othello.
+        game: Number of the game. 0: Tic Tac Toe, 1: Othello, 2: Connect Four.
     """
-    num_iterations = 6
+    num_iterations = 4
     num_games = 30
     num_mcts_sims = 30
     c_puct = 1
@@ -67,12 +67,12 @@ class CFG(object):
     batch_size = 128
     dirichlet_alpha = 0.8
     epsilon = 0.25
-    model_directory = "./tic_tac_toe/models/"
-    num_eval_games = 10
+    model_directory = "./connect_four/models/"
+    num_eval_games = 12
     eval_win_rate = 0.55
     load_model = 1
     human_play = 0
     resnet_blocks = 5
     record_loss = 1
     loss_file = "loss.txt"
-    game = 0
+    game = 2

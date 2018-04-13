@@ -33,7 +33,8 @@ class NeuralNetwork(object):
     """Represents the Policy and Value Resnet.
 
     Attributes:
-        side: An integer indicating the length of the board side.
+        row: An integer indicating the length of the board row.
+        column: An integer indicating the length of the board column.
         action_size: An integer indicating the total number of board squares.
         pi: A TF tensor for the search probabilities.
         v: A TF tensor for the search values.
@@ -51,7 +52,8 @@ class NeuralNetwork(object):
 
     def __init__(self, game):
         """Initializes NeuralNetwork with the Resnet network graph."""
-        self.side = game.side
+        self.row = game.row
+        self.column = game.column
         self.action_size = game.action_size
         self.pi = None
         self.v = None
@@ -59,12 +61,12 @@ class NeuralNetwork(object):
         self.graph = tf.Graph()
         with self.graph.as_default():
             self.states = tf.placeholder(tf.float32,
-                                         shape=[None, self.side, self.side])
+                                         shape=[None, self.row, self.column])
             self.training = tf.placeholder(tf.bool)
 
             # Input Layer
             input_layer = tf.reshape(self.states,
-                                     [-1, self.side, self.side, 1])
+                                     [-1, self.row, self.column, 1])
 
             # Convolutional Block
             conv1 = tf.layers.conv2d(
@@ -131,7 +133,7 @@ class NeuralNetwork(object):
 
             relu4 = tf.nn.relu(batch_norm4)
 
-            relu4_flat = tf.reshape(relu4, [-1, self.side * self.side * 2])
+            relu4_flat = tf.reshape(relu4, [-1, self.row * self.column * 2])
 
             logits = tf.layers.dense(inputs=relu4_flat, units=self.action_size)
 

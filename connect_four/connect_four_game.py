@@ -22,19 +22,19 @@
 # ==============================================================================
 """Class for Board State and Logic."""
 from copy import deepcopy
-from collections import Counter
 
 import numpy as np
 
 from game import Game
 
 
-class OthelloGame(Game):
+class ConnectFourGame(Game):
     """Represents the game board and its logic.
 
     Attributes:
         row: An integer indicating the length of the board row.
         column: An integer indicating the length of the board column.
+        connect: An integer indicating the number of pieces to connect.
         current_player: An integer to keep track of the current player.
         state: A list which stores the game state in matrix form.
         action_size: An integer indicating the total number of board squares.
@@ -42,10 +42,11 @@ class OthelloGame(Game):
     """
 
     def __init__(self):
-        """Initializes TicTacToeGame with the initial board state."""
+        """Initializes ConnectFourGame with the initial board state."""
         super().__init__()
         self.row = 6
-        self.column = 6
+        self.column = 7
+        self.connect = 4
         self.current_player = 1
         self.state = []
         self.action_size = self.row * self.column
@@ -53,11 +54,6 @@ class OthelloGame(Game):
         # Create a n x n matrix to represent the board
         for i in range(self.row):
             self.state.append([0 * j for j in range(self.column)])
-
-        self.state[(self.row // 2) - 1][(self.column // 2) - 1] = -1
-        self.state[(self.row // 2)][(self.column // 2)] = -1
-        self.state[(self.row // 2) - 1][(self.column // 2)] = 1
-        self.state[(self.row // 2)][(self.column // 2) - 1] = 1
 
         self.state = np.array(self.state)
 
@@ -78,7 +74,7 @@ class OthelloGame(Game):
         Returns:
             the cloned game object.
         """
-        game_clone = OthelloGame()
+        game_clone = ConnectFourGame()
         game_clone.state = deepcopy(self.state)
         game_clone.current_player = self.current_player
         return game_clone
@@ -87,83 +83,36 @@ class OthelloGame(Game):
         """Plays an action on the game board.
 
         Args:
-            action: A tuple in the form of (row, column, direction).
+            action: A tuple in the form of (row, column).
         """
         x = action[1]
         y = action[2]
-        d = action[3]
 
         self.state[x][y] = self.current_player
-
-        count = 1
-
-        # Flip all opponent pieces which are in the sandwich.
-        while True:
-            row = x + d[0] * count
-            col = y + d[1] * count
-
-            if self.state[row][col] == -self.current_player:
-                self.state[row][col] = self.current_player
-                count += 1
-            else:
-                break
-
         self.current_player = -self.current_player
 
     def get_valid_moves(self, current_player):
         """Returns a list of moves along with their validity.
 
-        Searches the board for valid sandwich moves.
+        Searches the board for zeros(0). 0 represents an empty square.
 
         Returns:
-            A list containing moves as (validity, row, column, direction).
+            A list containing moves in the form of (validity, row, column).
         """
         valid_moves = []
 
-        pl = current_player
-
-        side = self.row
-
         for x in range(self.row):
             for y in range(self.column):
-                found = False
-
-                # Search for empty squares.
                 if self.state[x][y] == 0:
-
-                    # Search in all 8 directions for a square of the opponent.
-                    for i in range(len(self.directions)):
-                        d = self.directions[i]
-
-                        row = x + d[0]
-                        col = y + d[1]
-
-                        if row < side and col < side:
-                            if self.state[row][col] == -pl:
-                                found_valid_move = False
-                                count = 2
-
-                                # Keep searching for a sandwich condition.
-                                while True:
-                                    row = x + d[0] * count
-                                    col = y + d[1] * count
-
-                                    if 0 <= row < side and 0 <= col < side:
-                                        if self.state[row][col] == pl:
-                                            valid_moves.append((1, x, y, d))
-                                            found_valid_move = True
-                                            break
-                                    else:
-                                        break
-
-                                    count += 1
-
-                                if found_valid_move:
-                                    found = True
-                                    break
-
-                if not found:
-                    valid_moves.append((0, None, None, None))
+                    if x + 1 == self.row:
+                        valid_moves.append((1, x, y))
+                    elif x + 1 < self.row:
+                        if self.state[x + 1][y] != 0:
+                            valid_moves.append((1, x, y))
+                        else:
+                            valid_moves.append((0, None, None))
+                else:
+                    valid_moves.append((0, None, None))
 
         return np.array(valid_moves)
 
@@ -186,30 +135,92 @@ class OthelloGame(Game):
         player_a = current_player
         player_b = -current_player
 
-        player_a_moves = self.get_valid_moves(player_a)
-        player_b_moves = self.get_valid_moves(player_b)
+        for x in range(self.row):
+            for y in range(self.column):
+                player_a_count = 0
+                player_b_count = 0
 
-        player_a_valid_count = Counter(x[0] == 1 for x in player_a_moves)
-        player_b_valid_count = Counter(x[0] == 1 for x in player_b_moves)
+                # Search for the player a.
+                if self.state[x][y] == player_a:
+                    player_a_count += 1
 
-        # Check if both players can't play any more moves.
-        if player_a_valid_count[True] == 0 or player_b_valid_count[True] == 0:
-            unique, piece_count = np.unique(self.state,
-                                            return_counts=True)
+                    # Search in all 8 directions for a similar piece.
+                    for i in range(len(self.directions)):
+                        d = self.directions[i]
 
-            # Check for the player with the most number of pieces.
-            if piece_count[player_a] > piece_count[player_b]:
-                return True, 1
-            elif piece_count[player_a] == piece_count[player_b]:
-                return True, 0
-            else:
-                return True, -1
-        else:
-            return False, 0
+                        r = x + d[0]
+                        c = y + d[1]
+
+                        if r < self.row and c < self.column:
+                            count = 1
+
+                            # Keep searching for a connect.
+                            while True:
+                                r = x + d[0] * count
+                                c = y + d[1] * count
+
+                                count += 1
+
+                                if 0 <= r < self.row and 0 <= c < self.column:
+                                    if self.state[r][c] == player_a:
+                                        player_a_count += 1
+                                    else:
+                                        break
+                                else:
+                                    break
+
+                        if player_a_count >= self.connect:
+                            return True, 1
+
+                        player_a_count = 1
+
+                # Search for the player b.
+                if self.state[x][y] == player_b:
+                    player_b_count += 1
+
+                    # Search in all 8 directions for a similar piece.
+                    for i in range(len(self.directions)):
+                        d = self.directions[i]
+
+                        r = x + d[0]
+                        c = y + d[1]
+
+                        if r < self.row and c < self.column:
+                            count = 1
+
+                            # Keep searching for a connect.
+                            while True:
+                                r = x + d[0] * count
+                                c = y + d[1] * count
+
+                                count += 1
+
+                                if 0 <= r < self.row and 0 <= c < self.column:
+                                    if self.state[r][c] == player_b:
+                                        player_b_count += 1
+                                    else:
+                                        break
+                                else:
+                                    break
+
+                        if player_b_count >= self.connect:
+                            return True, -1
+
+                        player_b_count = 1
+
+        # There are still moves left so the game is not over
+        valid_moves = self.get_valid_moves(current_player)
+
+        for move in valid_moves:
+            if move[0] is 1:
+                return False, 0
+
+        # If there are no moves left the game is over without a winner
+        return True, 0
 
     def print_board(self):
         """Prints the board state."""
-        print("   0    1    2    3    4    5")
+        print("   0    1    2    3    4    5    6")
         for x in range(self.row):
             print(x, end='')
             for y in range(self.column):

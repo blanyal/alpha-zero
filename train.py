@@ -139,9 +139,9 @@ class Train(object):
         for game_state in self_play_data:
             value = -value
             game_state[2] = value
-            self.augment_data(game_state, training_data, game.side)
+            self.augment_data(game_state, training_data, game.row, game.column)
 
-    def augment_data(self, game_state, training_data, side):
+    def augment_data(self, game_state, training_data, row, column):
         """Loop for each self-play game.
 
         Runs MCTS for each game state and plays a move based on the MCTS output.
@@ -150,18 +150,24 @@ class Train(object):
         Args:
             game_state: An object containing the state, pis and value.
             training_data: A list to store self play states, pis and vs.
-            side: An integer representing the length of side.
+            row: An integer indicating the length of the board row.
+            column: An integer indicating the length of the board column.
         """
         state = deepcopy(game_state[0])
         psa_vector = deepcopy(game_state[1])
-        psa_vector = np.reshape(psa_vector, (side, side))
 
-        # Augment data by rotating and flipping the game state.
-        for i in range(4):
-            training_data.append([np.rot90(state, i),
-                                  np.rot90(psa_vector, i).flatten(),
-                                  game_state[2]])
+        if CFG.game == 2:
+            training_data.append([state, psa_vector, game_state[2]])
+        else:
+            psa_vector = np.reshape(psa_vector, (row, column))
 
-            training_data.append([np.fliplr(np.rot90(state, i)),
-                                  np.fliplr(np.rot90(psa_vector, i)).flatten(),
-                                  game_state[2]])
+            # Augment data by rotating and flipping the game state.
+            for i in range(4):
+                training_data.append([np.rot90(state, i),
+                                      np.rot90(psa_vector, i).flatten(),
+                                      game_state[2]])
+
+                training_data.append([np.fliplr(np.rot90(state, i)),
+                                      np.fliplr(
+                                          np.rot90(psa_vector, i)).flatten(),
+                                      game_state[2]])

@@ -67,7 +67,7 @@ class Game(object):
 
         Returns:
             A bool representing the game over state.
-            An integer action value. (win: 1, loss: -1, draw: 0.001
+            An integer action value. (win: 1, loss: -1, draw: 0
         """
         pass
 

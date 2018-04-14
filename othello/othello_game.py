@@ -46,7 +46,7 @@ class OthelloGame(Game):
         super().__init__()
         self.row = 6
         self.column = 6
-        self.current_player = 1
+        self.current_player = -1
         self.state = []
         self.action_size = self.row * self.column
 

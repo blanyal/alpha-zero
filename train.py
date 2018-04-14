@@ -156,7 +156,7 @@ class Train(object):
         state = deepcopy(game_state[0])
         psa_vector = deepcopy(game_state[1])
 
-        if CFG.game == 2:
+        if CFG.game == 2 or CFG.game == 1:
             training_data.append([state, psa_vector, game_state[2]])
         else:
             psa_vector = np.reshape(psa_vector, (row, column))
